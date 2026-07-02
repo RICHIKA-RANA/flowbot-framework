@@ -9,6 +9,7 @@ import { SignInScreen } from './SignIn';
 import DocumentTree from '@/modules/DocumentTree';
 import { getDocumentTreeJSon } from '@/apiRequests/ttt';
 import { DocumentTreeData } from '@/types/documentTree';
+import SuggestedQueries from '@/modules/SuggestedQueries';
 
 const Chatbot: React.FC = () => {
   const {
@@ -38,9 +39,20 @@ const Chatbot: React.FC = () => {
 
   // Left panel state for toggle
   const [leftPanelExpanded, setLeftPanelExpanded] = useState(true);
+  const [showSuggestedQueries, setShowSuggestedQueries] = useState(true);
+  const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
   const [activeTabName, setActiveTabName] = useState<string>('chat');
   const [documentTreeLoading, setDocumentTreeLoading] = useState<boolean>(false);
   const [documentTreeJSon, setDocumentTreeJSon] = useState<DocumentTreeData | null>(null);
+
+  const handleSuggestedQueries = (queries: string[]) => {
+    if (queries?.length > 0) {
+      setShowSuggestedQueries(true)
+      setSuggestedQueries(queries)
+    } else {
+      setShowSuggestedQueries(false)
+    }
+  }
 
   const latestRequestRef = useRef(0);
   const switchTab = async (tabName: string, graphId: string ='') => {
@@ -230,6 +242,11 @@ const Chatbot: React.FC = () => {
                         onUploadClick={JSModule?.drawerEnabled ? () => setOpen(true) : undefined}
                       />
                     </div>
+                    {
+                      showSuggestedQueries && messages?.length == 0 && (
+                        <SuggestedQueries setQuery={setQuery} suggestedQuestions={suggestedQueries} />
+                      )
+                    }
                     <ChatInput
                       query={query}
                       messages={messages}
@@ -245,7 +262,7 @@ const Chatbot: React.FC = () => {
 
               {/* Right Documents Panel */}
               {JSModule?.drawerEnabled && (
-                <SidePanel switchTab={switchTab} open={open} setOpen={setOpen} namespace={namespace} />
+                <SidePanel switchTab={switchTab} open={open} setOpen={setOpen} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} />
               )}
             </div>
           </div>

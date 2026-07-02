@@ -6,11 +6,13 @@ export interface SideDrawerProps {
     setOpen: (val: boolean) => void;
     switchTab: (tabName: string, graphId?: string) => Promise<void>;
     namespace?: NamespaceState;
+    handleSuggestedQueries: (val: string[]) => void;
 }
 
 export interface DemoDocsSectionProps {
     styles: any;
     namespace: NamespaceState;
+    handleSuggestedQueries: (val: string[]) => void;
 }
 
 export interface UploadDropZoneProps {

@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState, useCallback } from "react";
+import React, { useContext, useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from 'next/router';
 import ThemeContext from "@/contexts/ThemeContext";
 import { useTainPDF } from "@/hooks/useTrainPDF";
@@ -11,6 +11,7 @@ import { SideDrawerProps, UploadDropZoneProps, UploadFileCardProps, UploadsSecti
 import { formatBytes } from '@/utils/formatBytes';
 import { FILE_TYPE_GLYPH, DEFAULT_FILE_GLYPH, fileTypeKey } from '@/utils/fileType';
 import { FileText, ChevronRight, Wand2, FolderOpen } from 'lucide-react';
+import { PublicDocument } from "@/types/namespace";
 
 const UploadDropZone: React.FC<UploadDropZoneProps> = ({
     styles, dragOver, setDragOver, handleFileDrop, handleFileChange, fileInputRef
@@ -247,12 +248,19 @@ const DemoFileIcon: React.FC<{ type: string }> = ({ type }) => {
     return <FileText size={26} color={color} strokeWidth={1.75} aria-hidden="true" />;
 };
 
-const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) => {
+const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace, handleSuggestedQueries }) => {
     const { JSModule } = useContext(ThemeContext);
     const themeColor: string = JSModule?.themeColor || '#3b82f6';
     const tryText: string = JSModule?.demoTryButtonText ?? 'Try with a demo document';
     const sectionLabel: string = JSModule?.demoSectionLabel ?? 'Demo documents';
     const orText: string = JSModule?.demoOrText ?? 'or';
+
+    useEffect(() => {
+        if (!namespace.demoActivated) return;
+        if (!namespace.publicDocs?.length) return;
+    
+        handleDocumentSelection(namespace.publicDocs[0]);
+    }, [ namespace.demoActivated, namespace.publicDocs]);
 
     if (!namespace.demoActivated) {
         return (
@@ -274,15 +282,18 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) 
         );
     }
 
+    const handleDocumentSelection = (doc:any) => {
+        namespace.setActiveDoc(doc.id);
+        if (doc.suggested_queries) handleSuggestedQueries(doc.suggested_queries)
+    }
     return (
         <>
             <div className={styles?.['Divider']} />
             <div className={styles?.['UploaderHeader']}>{sectionLabel}</div>
             <div className={styles?.['DataContainer']}>
-                {namespace.publicDocs.map((doc) => {
+                {namespace.publicDocs.map((doc: PublicDocument) => {
                     const type = fileTypeKey(doc);
                     const active = doc.id === namespace.activeDocId;
-                    const select = () => namespace.setActiveDoc(doc.id);
                     return (
                         <div
                             key={doc.id}
@@ -290,8 +301,8 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) 
                             role="button"
                             tabIndex={0}
                             title={doc.description || undefined}
-                            onClick={select}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); } }}
+                            onClick={() => {handleDocumentSelection(doc)}}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDocumentSelection(doc); } }}
                             style={{ cursor: 'pointer', borderColor: active ? themeColor : undefined, boxShadow: active ? `0 0 0 1px ${themeColor} inset` : undefined }}
                         >
                             <div className={styles?.['fileCardTop']}>
@@ -312,7 +323,7 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) 
     );
 };
 
-export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab }) => {
+export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab, handleSuggestedQueries }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const {
         documentList, setDocumentList, uploads, selectedFileType, setTrainingInProgress,
@@ -372,7 +383,7 @@ export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace,
 
             {/* Demo path —  hidden once the user has any private doc */}
             {namespace?.mode === 'public' && namespace.publicDocs.length > 0 && uploads.length === 0 && documentList.length === 0 && (
-                <DemoDocsSection styles={styles} namespace={namespace} />
+                <DemoDocsSection styles={styles} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} />
             )}
 
             <UploadsSection

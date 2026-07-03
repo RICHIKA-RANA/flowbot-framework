@@ -20,9 +20,8 @@ export const getJobSessionId = (): string => {
     return jobSessionId;
 };
 
-export const getGraphIds = async (): Promise<string[]> => {
+export const getGraphIds = async (): Promise<string[] | null> => {
     const docs = await listSessionDocuments(getJobSessionId());
-    return Array.isArray(docs)
-        ? docs.filter((d: any) => d?.state === 'COMPLETED' && d?.result_graph_id).map((d: any) => d.result_graph_id)
-        : [];
+    if (!Array.isArray(docs)) return null;
+    return docs.filter((d: any) => d?.state === 'COMPLETED' && d?.result_graph_id).map((d: any) => d.result_graph_id);
 };

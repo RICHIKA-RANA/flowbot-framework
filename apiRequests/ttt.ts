@@ -39,7 +39,7 @@ export const listSessionDocuments = async (jobSessionId: string) => {
 export const removeDocument = async (jobId: string) => {
     try {
         const response = await axiosTTTInstance.delete(`/v1/documents/${encodeURIComponent(jobId)}`);
-        return response?.data;
+        return response?.status >= 200 && response?.status < 300;
     } catch (error: any) {
         console.log(`something went wrong while removing document with jobid: ${jobId}`, {
             message: error?.message,

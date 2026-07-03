@@ -189,7 +189,9 @@ export const useTainPDF = () => {
         try {
             const jobSessionId = jobSessionIdRef.current || getJobSessionId();
             jobSessionIdRef.current = jobSessionId;
-            const { job_id } = await uploadDocument(file, jobSessionId);
+            const res = await uploadDocument(file, jobSessionId);
+            if (!res?.job_id) throw new Error('upload failed');
+            const { job_id } = res;
             setUploads((prev: FileUploadStatus[]) =>
                 prev.map(f =>
                     f.name === file.name && !f.jobId
@@ -260,7 +262,9 @@ export const useTainPDF = () => {
         }
 
         setDocumentList((prev) => prev.filter((d) => d.jobId !== jobId));
-        notifyGraphIdsChanged(); // private-doc set changed -> refresh the namespace gate
+        setUploads((prev) => prev.filter((f) => f.jobId !== jobId));
+        cancelledRef.current.delete(jobId);
+        notifyGraphIdsChanged();
         toast('Document removed', { type: 'success' });
     };
 

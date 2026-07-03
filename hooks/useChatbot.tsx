@@ -85,7 +85,7 @@ export const useChatbot = () => {
     useEffect(() => {
         let alive = true;
         getGraphIds().then((ids) => {
-            if (!alive) return;
+            if (!alive || ids === null) return;
             setCachedGraphIds(ids);
             setHasPrivateDocs(ids.length > 0);
         });

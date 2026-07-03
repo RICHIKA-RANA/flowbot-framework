@@ -259,7 +259,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                                         </div>
 
                                                         {/* here is the document icon to see the pagewise source references */}
-                                                        {(message?.type === 'apiMessage' && message?.sourceDocs) && (
+                                                        {(message?.type === 'apiMessage' && message?.sourceDocs && message.sourceDocs.length > 0) && (
                                                           <button
                                                           className={`${styles.referenceButton}`}
                                                           onClick={() => {handleSourceReferencesView(message, index)}}

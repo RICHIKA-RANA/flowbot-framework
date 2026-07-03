@@ -243,7 +243,7 @@ const Chatbot: React.FC = () => {
                       />
                     </div>
                     {
-                      showSuggestedQueries && messages?.length == 0 && (
+                      showSuggestedQueries && messages?.length == 0 && query === "" && (
                         <SuggestedQueries setQuery={setQuery} suggestedQuestions={suggestedQueries} />
                       )
                     }

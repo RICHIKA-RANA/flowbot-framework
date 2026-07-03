@@ -255,12 +255,21 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace, ha
     const sectionLabel: string = JSModule?.demoSectionLabel ?? 'Demo documents';
     const orText: string = JSModule?.demoOrText ?? 'or';
 
+    const handleDocumentSelection = (doc:any) => {
+        namespace.setActiveDoc(doc.id);
+        if (doc.suggested_queries) handleSuggestedQueries(doc.suggested_queries)
+    }
+
     useEffect(() => {
         if (!namespace.demoActivated) return;
         if (!namespace.publicDocs?.length) return;
-    
-        handleDocumentSelection(namespace.publicDocs[0]);
-    }, [ namespace.demoActivated, namespace.publicDocs]);
+        
+        if (namespace.activeDoc) {
+            handleDocumentSelection(namespace.activeDoc);
+        } else {
+            handleDocumentSelection(namespace.publicDocs[0]);
+        }
+    }, [ namespace.demoActivated, namespace.publicDocs, handleDocumentSelection]);
 
     if (!namespace.demoActivated) {
         return (
@@ -282,10 +291,6 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace, ha
         );
     }
 
-    const handleDocumentSelection = (doc:any) => {
-        namespace.setActiveDoc(doc.id);
-        if (doc.suggested_queries) handleSuggestedQueries(doc.suggested_queries)
-    }
     return (
         <>
             <div className={styles?.['Divider']} />

@@ -1,4 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import dbConnect from '@/config/mongodb';
+import { upsertUserByEmail } from '@/models/userModel';
 
 const SESSION_COOKIE = 'chatbot_session';
 const USER_COOKIE = 'chatbot_user';
@@ -63,6 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(200).json({ isLoggedIn: !!token, name, email });
         }
 
+        // ── POST — exchange authorization code for tokens ─────────────────────
         if (req.method === 'POST') {
             const { code, tokenEndpoint, clientId, redirectUri } = req.body || {};
 
@@ -101,6 +104,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             const { access_token, id_token } = await tokenResponse.json();
             const { name: displayName, email } = getUserFromIdToken(id_token);
+
+            // ── Write user to MongoDB right after successful token exchange ────
+            // This is the earliest point we have a confirmed identity.
+            // upsertUserByEmail creates the record if it doesn't exist yet, or
+            // updates the name if it does (e.g. user changed their Google display name).
+            if (email) {
+                try {
+                    await dbConnect();
+                    const savedUser = await upsertUserByEmail(email, displayName);
+                    console.log('#############################################')
+                    console.log('User upserted:', savedUser._id,savedUser.email)
+                } catch (dbErr) {
+                    // Non-fatal — log and continue. The session cookie is still set
+                    // so the user can keep using the app; we'll retry on next login.
+                    console.error('Failed to upsert user in MongoDB after login:', dbErr);
+                }
+            }
+
+            // Set the three HttpOnly session cookies
             res.setHeader('Set-Cookie', [
                 buildSetCookieHeader(SESSION_COOKIE, access_token, SESSION_MAX_AGE),
                 buildSetCookieHeader(USER_COOKIE, encodeURIComponent(displayName), SESSION_MAX_AGE),
@@ -109,6 +131,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(200).json({ success: true });
         }
 
+        // ── DELETE — clear session cookies (logout) ───────────────────────────
         if (req.method === 'DELETE') {
             res.setHeader('Set-Cookie', [
                 buildSetCookieHeader(SESSION_COOKIE, '', 0),

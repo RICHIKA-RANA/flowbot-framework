@@ -1,5 +1,6 @@
 const GRAPH_KEY = 'graphIds';
 const JOB_KEY = 'jobIds';
+const SESSION_ID_KEY = 'currentSessionId';
 
 // Fired whenever the set of session graph ids changes, so same-tab consumers
 // (e.g. the namespace gate in useChatbot) can react to upload completion.
@@ -10,7 +11,22 @@ const notifyGraphIdsChanged = () => {
     window.dispatchEvent(new Event(GRAPH_IDS_CHANGED_EVENT));
 };
 
-// adding a new graphid to the session storage
+// ─── Session ID ───────────────────────────────────────────────────────────
+// Written by useChatbot when currentSession is first generated so that
+// useTrainPDF can read it without prop threading.
+
+export const setCurrentSessionId = (sessionId: string): void => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(SESSION_ID_KEY, sessionId);
+};
+
+export const getCurrentSessionId = (): string => {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem(SESSION_ID_KEY) || '';
+};
+
+// ─── Graph IDs ────────────────────────────────────────────────────────────
+
 export const addGraphId = (graphId: string) => {
     if (typeof window === 'undefined') return;
 
@@ -44,8 +60,8 @@ export const clearGraphIds = () => {
     notifyGraphIdsChanged();
 };
 
+// ─── Job IDs
 
-// adding a new jobid to the session storage
 export const addJobId = (jobId: string) => {
     if (typeof window === 'undefined') return;
 
@@ -55,7 +71,7 @@ export const addJobId = (jobId: string) => {
         sessionStorage.setItem(JOB_KEY, JSON.stringify(jobIds));
     }
 };
-// fetching all stored jobids from the session storage
+
 export const getJobIds = (): string[] => {
     if (typeof window === 'undefined') return [];
 
@@ -69,7 +85,7 @@ export const getJobIds = (): string[] => {
         return [];
     }
 };
-// clearing the sessionstorage of jobids
+
 export const clearJobIds = () => {
     if (typeof window === 'undefined') return;
 

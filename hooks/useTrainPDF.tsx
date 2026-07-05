@@ -4,12 +4,45 @@ import ThemeContext from '@/contexts/ThemeContext';
 import { useRouter } from 'next/router';
 import { usePolling } from '@/hooks/usePolling';
 import { UploadPhase, FileUploadStatus } from '@/types/fileUploadStatus';
-import { addGraphId } from '@/utils/sessionJobs';
+import { addGraphId, getCurrentSessionId } from '@/utils/sessionJobs';
 import { toast } from 'react-toastify';
+
+/**
+ * Notify the server that a document has been processed and linked to this session.
+ * Called once per file when polling confirms COMPLETED + a valid graphId is present.
+ * Non-fatal — failure is logged but does not affect the upload UI.
+ */
+async function recordDocumentInHistory(
+    file: FileUploadStatus,
+    graphId: string,
+    chatbotId: string
+): Promise<void> {
+    const sessionId = getCurrentSessionId();
+    if (!sessionId || !graphId) return;
+
+    try {
+        await fetch('/api/history/document', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                sessionId,
+                chatbotId,
+                graphId,
+                name:  file.name,
+                size:  file.size,
+                type:  file.type,
+                jobId: file.jobId,
+            }),
+        });
+    } catch (err) {
+        console.error('recordDocumentInHistory failed (non-fatal):', err);
+    }
+}
 
 const pollProgress = async (
     uploads: FileUploadStatus[],
-    cancelledRef: React.MutableRefObject<Set<string>>
+    cancelledRef: React.MutableRefObject<Set<string>>,
+    chatbotId: string
 ): Promise<FileUploadStatus[]> => {
     return Promise.all(
         uploads.map(async (f) => {
@@ -30,17 +63,29 @@ const pollProgress = async (
                         error: 'Upload cancelled',
                         progress: 0
                     };
-                } else if (currentState == "FAILED" || currentState == "COMPLETED") {
-                    
-                    if (currentState == "COMPLETED") {
-                        // we are storing it in session storage;
-                        const graphId = response?.result_graph_id || f.graphId
-                        addGraphId(graphId)
+                }
+
+                if (currentState === 'FAILED') {
+                    return { ...f, phase: 'error', progress: progressPercentage };
+                }
+
+                if (currentState === 'COMPLETED') {
+                    const graphId = response?.result_graph_id;
+
+                    // Only record when we have a real graphId — guards against the
+                    // race where COMPLETED fires but result_graph_id isn't set yet,
+                    // which would otherwise push an empty string into sessionStorage.
+                    if (graphId) {
+                        addGraphId(graphId);
+
+                        // Tell the server to persist this document in user_histories.
+                        // Fire-and-forget — UI does not wait for this.
+                        recordDocumentInHistory(f, graphId, chatbotId);
                     }
 
                     return {
                         ...f,
-                        graphId: response?.result_graph_id,
+                        graphId: graphId || f.graphId,
                         phase: currentState == "FAILED"? "error": "done",
                         progress: progressPercentage
                     };
@@ -80,6 +125,9 @@ export const useTainPDF = () => {
     const cancelledRef = useRef<Set<string>>(new Set());
     const uploadsRef = useRef<FileUploadStatus[]>([]);
     const { 'chat-id': chatId } = router.query;
+
+    // chatbotId needed to record documents under the right chatbot in user_histories
+    const chatbotId = (chatId as string) || process.env.NEXT_PUBLIC_DEFAULT_CHAT_ID || '';
 
     uploadsRef.current = uploads;
     const hasActiveFiles = uploads.some(
@@ -129,16 +177,12 @@ export const useTainPDF = () => {
         setTrainingInProgress(true);
         
         try {
-            const {job_id, job_type, state} = await uploadDocument(file);
+            const {job_id} = await uploadDocument(file);
             setDocumentList((prev: FileUploadStatus[]) => [...prev,{ ...entry, jobId: job_id }]);
             setUploads((prev: FileUploadStatus[]) =>
-                prev.map(f =>
+                prev.map((f) =>
                     f.name === file.name && !f.jobId
-                        ? {
-                              ...f,
-                              jobId: job_id,
-                              phase: f.phase === "uploading"? "processing": f.phase
-                          }
+                        ? { ...f, jobId: job_id, phase: f.phase === 'uploading' ? 'processing' : f.phase }
                         : f
                 )
             );
@@ -147,7 +191,7 @@ export const useTainPDF = () => {
             // a unique jobId to differentiate the file
             const tempId = crypto.randomUUID();
             setUploads((prev: FileUploadStatus[]) =>
-                prev.map(f =>
+                prev.map((f) =>
                     f.name === file.name && !f.jobId
                         ? {
                               ...f,
@@ -176,7 +220,7 @@ export const useTainPDF = () => {
         }
     };
 
-    // TODO: extend this function, once the retry upload option is there;
+    // TODO: extend this function once the retry upload option is added
     const retryUpload = (fileName: string) => {};
 
     const removeUpload = (jobId: string) => {

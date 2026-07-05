@@ -12,7 +12,7 @@ import type { Socket } from 'socket.io-client';
 import ThemeContext from '@/contexts/ThemeContext';
 import { generateRandomString } from '@/utils/generateRandomeString';
 import { getDocumentNameAndPageNumber } from '@/utils/extractDocumentNameAndPage';
-import { getGraphIds, GRAPH_IDS_CHANGED_EVENT } from '@/utils/sessionJobs';
+import { getGraphIds, GRAPH_IDS_CHANGED_EVENT, setCurrentSessionId } from '@/utils/sessionJobs';
 import { listPublicNamespaces, listPublicNamespaceDocuments } from '@/apiRequests/ttt';
 import { NamespaceMode, PublicDocument, NamespaceState } from '@/types/namespace';
 // TODO(demo-seed): temporary frontend demo docs; remove once demo-library is seeded on the backend
@@ -191,8 +191,17 @@ export const useChatbot = () => {
             setBotLoading(true);
             if (chatId) {
                 if (typeof chatId === 'string') {
-                    setNewChatRoom(chatId)
-                    if (!currentSession) setCurrentSession(generateRandomString('session_', 9));
+                    setNewChatRoom(chatId);
+                    if (!currentSession) {
+                        const newSessionId = generateRandomString('session_', 9);
+                        setCurrentSession(newSessionId);
+
+                        // Persist to sessionStorage so useTrainPDF can read it without
+                        // prop drilling. Cleared automatically when the tab closes.
+                        // TODO: when "New Chat" button is added, call setCurrentSessionId
+                        //       with the newly generated session ID at that point too.
+                        setCurrentSessionId(newSessionId);
+                    }
                 }
                 setBotLoading(false);
             }

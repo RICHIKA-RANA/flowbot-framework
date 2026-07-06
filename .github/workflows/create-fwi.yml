@@ -48,7 +48,7 @@ jobs:
           
         run: |
           # Execute the Python script - it will handle all cases gracefully
-          python scripts/create-fwi.py
+          python .github/scripts/create-fwi.py
           
       - name: Log completion
         if: always()

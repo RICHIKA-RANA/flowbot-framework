@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/config/mongodb';
 import { UserHistoryModel } from '@/models/userHistoryModel';
+import { EMAIL_COOKIE } from '@/pages/api/auth/session';
 
-const EMAIL_COOKIE = 'chatbot_email';
 
 // ─── GET /api/history/sessions ────────────────────────────────────────────────
 // Returns all sessions for the logged-in user sorted by createdAt desc.

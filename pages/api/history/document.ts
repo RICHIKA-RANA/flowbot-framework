@@ -3,7 +3,7 @@ import dbConnect from '@/config/mongodb';
 import { upsertUserHistory, pushDocumentEntry } from '@/models/userHistoryModel';
 import UserModel from '@/models/userModel';
 
-const EMAIL_COOKIE = 'chatbot_email';
+import { EMAIL_COOKIE } from '@/pages/api/auth/session';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {

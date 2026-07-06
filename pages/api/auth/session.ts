@@ -2,9 +2,9 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/config/mongodb';
 import { upsertUserByEmail } from '@/models/userModel';
 
-const SESSION_COOKIE = 'chatbot_session';
-const USER_COOKIE = 'chatbot_user';
-const EMAIL_COOKIE = 'chatbot_email';
+export const SESSION_COOKIE = 'chatbot_session';
+export const USER_COOKIE = 'chatbot_user';
+export const EMAIL_COOKIE = 'chatbot_email';
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
 
 function buildSetCookieHeader(name: string, value: string, maxAge: number): string {
@@ -113,8 +113,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 try {
                     await dbConnect();
                     const savedUser = await upsertUserByEmail(email, displayName);
-                    console.log('#############################################')
-                    console.log('User upserted:', savedUser._id,savedUser.email)
                 } catch (dbErr) {
                     // Non-fatal — log and continue. The session cookie is still set
                     // so the user can keep using the app; we'll retry on next login.

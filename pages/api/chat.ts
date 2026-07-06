@@ -18,9 +18,8 @@ const { htmlToText } = require('html-to-text');
 
 export const config = { api: { bodyParser: { sizeLimit: '100mb' } } };
 
-const SESSION_COOKIE = 'chatbot_session';
-const EMAIL_COOKIE   = 'chatbot_email';
-const USER_COOKIE    = 'chatbot_user';
+import { SESSION_COOKIE, USER_COOKIE, EMAIL_COOKIE } from '@/pages/api/auth/session';
+
 
 async function botRequiresAuth(chatBotId: string): Promise<boolean> {
   const loadOpenId = async (id: string) => {

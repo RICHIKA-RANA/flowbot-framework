@@ -13,7 +13,7 @@ import { EMAIL_COOKIE } from '@/pages/api/auth/session';
 // Scoped to the logged-in user — cannot read another user's session.
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'GET') {
+    if (req.method !== 'GET' && req.method !== 'DELETE') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
@@ -27,6 +27,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await dbConnect();
 
     const { sessionId } = req.query;
+
+    // ── DELETE: remove a session record ───────────────────────────────────────
+    if (req.method === 'DELETE') {
+        if (!sessionId || typeof sessionId !== 'string') {
+            return res.status(400).json({ error: 'sessionId is required' });
+        }
+        try {
+            const result = await UserHistoryModel.deleteOne({ sessionId, email });
+            if (result.deletedCount === 0) {
+                return res.status(404).json({ error: 'Session not found' });
+            }
+            console.log(`[DELETE /api/history/sessions?sessionId=${sessionId}] user=${email}`);
+            return res.status(200).json({ success: true });
+        } catch (err: any) {
+            console.error(`[DELETE /api/history/sessions?sessionId=${sessionId}] error:`, err);
+            return res.status(500).json({ error: err.message || 'Something went wrong' });
+        }
+    }
 
     // ── Detail: sessionId provided ────────────────────────────────────────────
     if (sessionId && typeof sessionId === 'string') {

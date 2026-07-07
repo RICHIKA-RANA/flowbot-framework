@@ -18,8 +18,8 @@ const { htmlToText } = require('html-to-text');
 
 export const config = { api: { bodyParser: { sizeLimit: '100mb' } } };
 
-import { SESSION_COOKIE, USER_COOKIE, EMAIL_COOKIE } from '@/pages/api/auth/session';
-
+import { SESSION_COOKIE } from '@/pages/api/auth/session';
+import { getVerifiedEmail } from '@/utils/auth';
 
 async function botRequiresAuth(chatBotId: string): Promise<boolean> {
   const loadOpenId = async (id: string) => {
@@ -39,16 +39,16 @@ async function botRequiresAuth(chatBotId: string): Promise<boolean> {
  * Returns the user doc if email is present, null for anonymous sessions.
  */
 async function resolveUser(req: NextApiRequest): Promise<IUser | null> {
-    const rawEmail = req.cookies[EMAIL_COOKIE];
-    const rawName  = req.cookies[USER_COOKIE];
-    const email    = rawEmail ? decodeURIComponent(rawEmail) : null;
-    const name     = rawName  ? decodeURIComponent(rawName)  : '';
-
-    if (!email) return null;
-
-    // One user record per person keyed by email.
-    // This is idempotent — safe to call on every chat request.
-    return upsertUserByEmail(email, name);
+    try {
+        const email = await getVerifiedEmail(req);
+        // Name is display-only, not used for identity — no need to verify it
+        const rawName = req.cookies["chatbot_user"];
+        const name = rawName ? decodeURIComponent(rawName) : "";
+        return upsertUserByEmail(email, name);
+    } catch {
+        // No valid session token — anonymous user, chat still works
+        return null;
+    }
 }
 
 /**

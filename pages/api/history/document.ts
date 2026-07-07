@@ -2,8 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/config/mongodb';
 import { upsertUserHistory, pushDocumentEntry } from '@/models/userHistoryModel';
 import UserModel from '@/models/userModel';
-
-import { EMAIL_COOKIE } from '@/pages/api/auth/session';
+import { getVerifiedEmail } from '@/utils/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'POST') {
@@ -17,26 +16,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
+        const email = await getVerifiedEmail(req);
+
         await dbConnect();
 
-        // Read user identity from the session cookie (set at Google login).
-        // Falls back to null for anonymous / non-logged-in users.
-        const rawEmail = req.cookies[EMAIL_COOKIE];
-        const email    = rawEmail ? decodeURIComponent(rawEmail) : null;
+        const user = await UserModel.findOne({ email }).select('_id').lean();
+        const userId = user?._id || null;
 
-        // Resolve the users._id for the foreign key if we have an email
-        let userId = null;
-        if (email) {
-            const user = await UserModel.findOne({ email }).select('_id').lean();
-            if (user) userId = user._id;
-        }
-
-        // Ensure the history document for this session exists, then push the doc entry
         await upsertUserHistory(sessionId, chatbotId || '', email, userId);
         await pushDocumentEntry(sessionId, { name, size: size || 0, type: type || '', jobId: jobId || '', graphId });
 
         return res.status(200).json({ success: true });
     } catch (err: any) {
+        if (err.status) {
+            return res.status(err.status).json({ error: err.message });
+        }
         console.error('Failed to record document upload in history:', err);
         return res.status(500).json({ error: err.message || 'Something went wrong' });
     }

@@ -1,27 +1,18 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/config/mongodb';
 import { UserHistoryModel } from '@/models/userHistoryModel';
-import { EMAIL_COOKIE } from '@/pages/api/auth/session';
-
-
-// ─── GET /api/history/sessions ────────────────────────────────────────────────
-// Returns all sessions for the logged-in user sorted by createdAt desc.
-// Each entry contains: sessionId, chatbotId, createdAt, firstQuestion.
-//
-// ─── GET /api/history/sessions?sessionId=session_xxx ─────────────────────────
-// Returns full documents[] and chats[] for the given session.
-// Scoped to the logged-in user — cannot read another user's session.
+import { getVerifiedEmail } from '@/utils/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET' && req.method !== 'DELETE') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const rawEmail  = req.cookies[EMAIL_COOKIE];
-    const email     = rawEmail ? decodeURIComponent(rawEmail) : null;
-
-    if (!email) {
-        return res.status(401).json({ error: 'Not authenticated' });
+    let email: string;
+    try {
+        email = await getVerifiedEmail(req);
+    } catch (err: any) {
+        return res.status(err.status || 401).json({ error: err.message || 'Not authenticated' });
     }
 
     await dbConnect();

@@ -64,6 +64,8 @@ export const useChatbot = () => {
 
     // --- Public/private document namespace switch ---
     const [graphIdsVersion, setGraphIdsVersion] = useState(0);
+    const [cachedGraphIds, setCachedGraphIds] = useState<string[]>([]);
+    const [hasPrivateDocs, setHasPrivateDocs] = useState(false);
     const [publicDocs, setPublicDocs] = useState<PublicDocument[]>([]);
     const [activeDocId, setActiveDocId] = useState<string | null>(null);
     const [demoActivated, setDemoActivated] = useState(false);
@@ -78,7 +80,18 @@ export const useChatbot = () => {
         };
     }, []);
 
-    const hasPrivateDocs = getGraphIds().length > 0;
+    // Fetch once per change (upload done / remove / focus) and cache; the chat
+    // send reads the cache instead of hitting /v1/documents every message.
+    useEffect(() => {
+        let alive = true;
+        getGraphIds().then((ids) => {
+            if (!alive || ids === null) return;
+            setCachedGraphIds(ids);
+            setHasPrivateDocs(ids.length > 0);
+        });
+        return () => { alive = false; };
+    }, [graphIdsVersion]);
+
     const namespaceMode: NamespaceMode = hasPrivateDocs ? 'private' : 'public';
 
     useEffect(() => {
@@ -103,7 +116,7 @@ export const useChatbot = () => {
     const resolveGraphIds = (): string[] =>
         namespaceMode === 'public' && demoActivated && activeDoc?.result_graph_id
             ? [activeDoc.result_graph_id]
-            : getGraphIds();
+            : cachedGraphIds;
 
 
     const activateDemo = () => {
@@ -161,12 +174,15 @@ export const useChatbot = () => {
 
     const handleLogin = () => {
         if (JSModule?.openid?.authorization_endpoint && chatId) {
+            const state = crypto.randomUUID();
+            sessionStorage.setItem('oauth_state', state);
             const redirectUri = buildRedirectUri(chatId as string);
             const authUrl = `${JSModule.openid.authorization_endpoint}?` +
                 `client_id=${encodeURIComponent(JSModule.openid.client_id)}&` +
                 `redirect_uri=${encodeURIComponent(redirectUri)}&` +
                 `response_type=code&` +
                 `scope=${encodeURIComponent(JSModule.openid.scopes_supported?.join(' ') || 'openid profile email')}&` +
+                `state=${encodeURIComponent(state)}&` +
                 `prompt=select_account`;
             window.location.href = authUrl;
         }
@@ -331,6 +347,13 @@ export const useChatbot = () => {
             }
 
             if (openidCode && JSModule?.openid) {
+                const returnedState = router.query.state;
+                const savedState = sessionStorage.getItem('oauth_state');
+                if (!returnedState || returnedState !== savedState) {
+                    setAuthError('Authentication failed due to a security check. Please try again.');
+                    return;
+                }
+                sessionStorage.removeItem('oauth_state');
                 try {
                     // Must exactly match the redirect URI used in handleLogin
                     const redirectUri = buildRedirectUri(chatId as string);

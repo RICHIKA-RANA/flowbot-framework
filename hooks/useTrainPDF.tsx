@@ -1,10 +1,10 @@
 import { useContext, useEffect, useState, useRef } from 'react';
-import { uploadDocument, getJobProgress, cancelDocumentProcessing } from '@/apiRequests/ttt';
+import { uploadDocument, getJobProgress, cancelDocumentProcessing, listSessionDocuments, removeDocument } from '@/apiRequests/ttt';
 import ThemeContext from '@/contexts/ThemeContext';
 import { useRouter } from 'next/router';
 import { usePolling } from '@/hooks/usePolling';
-import { UploadPhase, FileUploadStatus } from '@/types/fileUploadStatus';
-import { addGraphId } from '@/utils/sessionJobs';
+import { FileUploadStatus, SessionDocument } from '@/types/fileUploadStatus';
+import { getJobSessionId, notifyGraphIdsChanged } from '@/utils/sessionJobs';
 import { toast } from 'react-toastify';
 
 const pollProgress = async (
@@ -31,13 +31,6 @@ const pollProgress = async (
                         progress: 0
                     };
                 } else if (currentState == "FAILED" || currentState == "COMPLETED") {
-                    
-                    if (currentState == "COMPLETED") {
-                        // we are storing it in session storage;
-                        const graphId = response?.result_graph_id || f.graphId
-                        addGraphId(graphId)
-                    }
-
                     return {
                         ...f,
                         graphId: response?.result_graph_id,
@@ -70,36 +63,101 @@ const pollProgress = async (
     );
 };
 
+const toCompletedDocs = (data: any[]): SessionDocument[] =>
+    data
+        .filter((raw: any) => raw?.state === 'COMPLETED')
+        .map((raw: any) => ({
+            jobId: raw?.job_id, fileName: raw?.file_name,
+            fileSize: raw?.file_size, graphId: raw?.result_graph_id,
+        }));
+
 export const useTainPDF = () => {
     const router = useRouter();
     const { JSModule } = useContext(ThemeContext);
-    const [documentList, setDocumentList] = useState<FileUploadStatus[]>([]);
-    const [selectedFileType, setSelectedFileType] = useState<string>('PDF');
     const [trainingInProgress, setTrainingInProgress] = useState(false);
     const [uploads, setUploads] = useState<FileUploadStatus[]>([]);
     const cancelledRef = useRef<Set<string>>(new Set());
     const uploadsRef = useRef<FileUploadStatus[]>([]);
+    const jobSessionIdRef = useRef<string>('');
+    const [documentList, setDocumentList] = useState<SessionDocument[]>([]);
+    const [loadingSessionDocuments, setLoadingSessionDocuments] = useState(false);
     const { 'chat-id': chatId } = router.query;
 
     uploadsRef.current = uploads;
+
+    useEffect(() => {
+        jobSessionIdRef.current = getJobSessionId();
+        rehydrateSession();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // completed docs -> Trained; still-processing -> Uploads (polling resumes them)
+    const rehydrateSession = async () => {
+        const jobSessionId = jobSessionIdRef.current;
+        if (!jobSessionId) return;
+
+        setLoadingSessionDocuments(true);
+        const data = await listSessionDocuments(jobSessionId);
+        setLoadingSessionDocuments(false);
+
+        if (!Array.isArray(data)) return;
+        setDocumentList(toCompletedDocs(data));
+
+        const inProgressStates = ['QUEUED', 'ONGOING', 'CANCELLING'];
+        const seeded: FileUploadStatus[] = data
+            .filter((raw: any) => inProgressStates.includes(raw?.state))
+            .map((raw: any) => ({
+                name: raw?.file_name || raw?.job_id,
+                size: raw?.file_size || 0,
+                type: '',
+                progress: 0,
+                phase: raw?.state === 'CANCELLING' ? 'cancelling' : 'processing',
+                jobId: raw?.job_id,
+                graphId: raw?.result_graph_id || '',
+            }));
+
+        if (seeded.length) {
+            setUploads((prev) => {
+                const existing = new Set(prev.map((f) => f.jobId));
+                return [...prev, ...seeded.filter((s) => !existing.has(s.jobId))];
+            });
+            setTrainingInProgress(true);
+        }
+    };
     const hasActiveFiles = uploads.some(
         (f: FileUploadStatus) => f.phase === 'uploading' || f.phase === 'processing' || f.phase === 'cancelling'
     );
+
+    // move finished uploads into Trained using their polling data (/v1/documents lags)
+    const mergeCompletedIntoTrained = (list: FileUploadStatus[]) => {
+        const completed = list.filter((f) => f.phase === 'done' && f.jobId);
+        if (!completed.length) return;
+        setDocumentList((prev) => {
+            const existing = new Set(prev.map((d) => d.jobId));
+            const added: SessionDocument[] = completed
+                .filter((f) => !existing.has(f.jobId as string))
+                .map((f) => ({
+                    jobId: f.jobId as string,
+                    fileName: f.name,
+                    fileSize: f.size,
+                    graphId: f.graphId,
+                }));
+            if (!added.length) return prev;
+            notifyGraphIdsChanged(); // let the namespace gate know private docs exist now
+            return [...prev, ...added];
+        });
+    };
 
     usePolling<void>({
         fn: async () => {
             const updated = await pollProgress(uploadsRef.current, cancelledRef);
             setUploads(updated);
-            // Mark newly completed files as trained
-            const updatedDocumentList = updated.map((item) => item.phase === "done"? { ...item, progress: 100}: item)
-            setDocumentList(updatedDocumentList)
+            mergeCompletedIntoTrained(updated);
         },
         interval: JSModule?.pollingInterval || 400, // configurable polling interval from backend config
         enabled: hasActiveFiles,
         shouldStop: () => !uploadsRef.current.some((f: FileUploadStatus) => f.phase === 'uploading' || f.phase === 'processing' || f.phase === 'cancelling'),
-        onComplete: () => {
-            setTrainingInProgress(false);
-        },
+        onComplete: () => setTrainingInProgress(false),
     });
 
     const handleFileChange = (e: any) => {
@@ -129,8 +187,11 @@ export const useTainPDF = () => {
         setTrainingInProgress(true);
         
         try {
-            const {job_id, job_type, state} = await uploadDocument(file);
-            setDocumentList((prev: FileUploadStatus[]) => [...prev,{ ...entry, jobId: job_id }]);
+            const jobSessionId = jobSessionIdRef.current || getJobSessionId();
+            jobSessionIdRef.current = jobSessionId;
+            const res = await uploadDocument(file, jobSessionId);
+            if (!res?.job_id) throw new Error('upload failed');
+            const { job_id } = res;
             setUploads((prev: FileUploadStatus[]) =>
                 prev.map(f =>
                     f.name === file.name && !f.jobId
@@ -142,7 +203,6 @@ export const useTainPDF = () => {
                         : f
                 )
             );
-
         } catch {
             // a unique jobId to differentiate the file
             const tempId = crypto.randomUUID();
@@ -182,7 +242,30 @@ export const useTainPDF = () => {
     const removeUpload = (jobId: string) => {
         cancelledRef.current.delete(jobId);
         setUploads((prev: FileUploadStatus[]) => prev.filter((f) => f.jobId !== jobId));
-        setDocumentList((prev: FileUploadStatus[]) => prev.filter((item) => item.jobId !== jobId));
+    };
+
+    // delete a trained document; completed docs are terminal so the backend removes them
+    const removeSessionDocument = async (jobId: string) => {
+        if (!jobId) return;
+
+        setDocumentList((prev) =>
+            prev.map((d) => (d.jobId === jobId ? { ...d, removing: true } : d))
+        );
+
+        const result = await removeDocument(jobId);
+        if (!result) {
+            toast('Failed to remove document', { type: 'error' });
+            setDocumentList((prev) =>
+                prev.map((d) => (d.jobId === jobId ? { ...d, removing: false } : d))
+            );
+            return;
+        }
+
+        setDocumentList((prev) => prev.filter((d) => d.jobId !== jobId));
+        setUploads((prev) => prev.filter((f) => f.jobId !== jobId));
+        cancelledRef.current.delete(jobId);
+        notifyGraphIdsChanged();
+        toast('Document removed', { type: 'success' });
     };
 
     const canCancel = (jobId: string) => {
@@ -192,16 +275,15 @@ export const useTainPDF = () => {
 
     return {
         documentList,
-        setDocumentList,
-        selectedFileType,
         uploads,
         trainingInProgress,
-        setTrainingInProgress,
         handleFileChange,
         handleFileDrop,
         cancelUpload,
         retryUpload,
         removeUpload,
         canCancel,
+        loadingSessionDocuments,
+        removeSessionDocument,
     };
 }

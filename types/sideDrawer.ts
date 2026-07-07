@@ -1,5 +1,6 @@
 import React from 'react';
 import { NamespaceState } from '@/types/namespace';
+import { SessionDocument } from '@/types/fileUploadStatus';
 
 export interface SideDrawerProps {
     open: boolean;
@@ -42,6 +43,8 @@ export interface UploadsSectionProps {
 
 export interface TrainedDocumentsProps {
     styles: any;
-    documentList: any[];
+    documentList: SessionDocument[];
+    loading: boolean;
+    removeSessionDocument: (jobId: string) => void;
     switchTab: (tabName: string, graphId?: string) => Promise<void>;
 }

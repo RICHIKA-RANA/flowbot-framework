@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             if (result.deletedCount === 0) {
                 return res.status(404).json({ error: 'Session not found' });
             }
-            console.log(`[DELETE /api/history/sessions?sessionId=${sessionId}] user=${email}`);
+            console.log(`[DELETE /api/history/sessions?sessionId=${sessionId}]`);
             return res.status(200).json({ success: true });
         } catch (err: any) {
             console.error(`[DELETE /api/history/sessions?sessionId=${sessionId}] error:`, err);

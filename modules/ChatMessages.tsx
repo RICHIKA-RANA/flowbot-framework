@@ -7,12 +7,15 @@ import ReferenceViewOuter from "@/components/ui/ReferenceView/ReferenceViewOuter
 import ReferenceViewer from "@/components/ui/ReferenceView/ReferenceView";
 import ThemeContext from "@/contexts/ThemeContext";
 import Image from "next/image";
-import { Fragment, useContext, useRef, useEffect } from "react";
+import { Fragment, useContext, useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { IReferences, Message } from '@/types/chat';
 import rehypeRaw from 'rehype-raw';
 import { DynamicComponent } from "@/components/DynamicComponent";
 import { useRouter } from 'next/router';
+import { FileText, ChevronUp } from "lucide-react";
+import { Document } from "langchain/document";
+import SourcePanel from "./SourcePanel";
 
 interface ChatMessageProps {
     chatId: string;
@@ -27,6 +30,8 @@ interface ChatMessageProps {
 
 export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loading, handleSubmit, typingState, handleFileUpload, references, onUploadClick }) => {
 
+    const [expandedMessageIndex, setExpandedMessageIndex] = useState<number | null>(null);
+    const [selectedSourceReferences, setSelectedSourceReferences] = useState<Document[]>([]);
     const { JSModule, styles } = useContext(ThemeContext);
     const router = useRouter();
     const messageListRef = useRef<HTMLDivElement>(null);
@@ -44,6 +49,16 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
 
     const askQuestion = () => {
         handleSubmit('contact us');
+    }
+
+    const handleSourceReferencesView = (message: Message, index: number) => {
+        if (expandedMessageIndex === index) {
+            setExpandedMessageIndex(null);
+            setSelectedSourceReferences([]);
+        } else {
+            setExpandedMessageIndex(index);
+            setSelectedSourceReferences(message.sourceDocs ?? []);
+        }
     }
 
     return (
@@ -195,7 +210,9 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                                     className={`${styles?.markdownanswer}`}
                                                 >
                                                     <span
-                                                        className={`${styles?.markdownanswerspan} ${message?.type == 'apiMessage' ? styles?.chat_container_left : styles?.chat_container_right}`}
+                                                        className={`${styles?.markdownanswerspan} ${message?.type == 'apiMessage' ? styles?.chat_container_left : styles?.chat_container_right}
+                                                        ${message?.type === 'apiMessage' && message?.sourceDocs? styles?.chat_container_left_with_reference: ''}
+                                                            `}
                                                     >
                                                         <div style={{ display: 'flex' }}>
                                                             {!message?.step?.injectionType &&
@@ -240,6 +257,22 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                                                 </div>
                                                             )}
                                                         </div>
+
+                                                        {/* here is the document icon to see the pagewise source references */}
+                                                        {(message?.type === 'apiMessage' && message?.sourceDocs && message.sourceDocs.length > 0) && (
+                                                          <button
+                                                          className={`${styles.referenceButton}`}
+                                                          onClick={() => {handleSourceReferencesView(message, index)}}
+                                                        >
+                                                          <span className={`${styles?.referenceButton__icon}`}>
+                                                          {expandedMessageIndex === index
+                                                          ? <ChevronUp size={20} />
+                                                          : <FileText size={20} />}
+                                                          </span>
+                                                          <span className={`${styles?.referenceButton__divider}`} />
+                                                          <span className={`${styles?.referenceButton__count}`}>{message?.sourceDocs?.length}</span>
+                                                        </button>
+                                                        )}
                                                     </span>
                                                     {(JSModule?.conversationLayout && ((message?.step?.inputType === 'await' && index === messages.length - 1) || (typingState && index === messages.length - 1) || (loading && index === messages.length - 1))) &&
                                                         <span
@@ -283,6 +316,14 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                     {/* Dummy div to scroll into view */}
                     <div ref={messageListRef} />
                 </div>
+                {
+                    expandedMessageIndex !== null && (
+                        <SourcePanel
+                            key={expandedMessageIndex}
+                            sources={selectedSourceReferences}
+                        />
+                    )
+                }
             </div>
             {/* here we will be showing the reference documents */}
             {

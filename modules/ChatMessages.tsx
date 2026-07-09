@@ -32,6 +32,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
 
     const [expandedMessageIndex, setExpandedMessageIndex] = useState<number | null>(null);
     const [selectedSourceReferences, setSelectedSourceReferences] = useState<Document[]>([]);
+    const [sourceExpansion, setSourceExpansion] = useState<Record<number, Set<number>>>({});
     const { JSModule, styles } = useContext(ThemeContext);
     const router = useRouter();
     const messageListRef = useRef<HTMLDivElement>(null);
@@ -319,8 +320,14 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                 {
                     expandedMessageIndex !== null && (
                         <SourcePanel
-                            key={expandedMessageIndex}
                             sources={selectedSourceReferences}
+                            expandedSources={sourceExpansion[expandedMessageIndex] ?? new Set()}
+                            onChange={(next) =>
+                                setSourceExpansion(prev => ({
+                                    ...prev,
+                                    [expandedMessageIndex]: next,
+                                }))
+                            }
                         />
                     )
                 }

@@ -3,36 +3,29 @@ import {
     FileText,
 } from "lucide-react";
 import ThemeContext from "@/contexts/ThemeContext";
-import { useContext, useState } from "react";
+import { useContext } from "react";
 import { Document } from "langchain/document";
 import { SourcePanelProps } from "@/types/sourcePanel";
 
 export default function SourcePanel({
-    sources
+    sources,
+    expandedSources,
+    onChange,
 }: SourcePanelProps) {
 
     const { styles } = useContext(ThemeContext);
-    const [expandedSources, setExpandedSources] = useState<Set<number>>(new Set());
     const handleSourceClick = (index: number) => {
-        setExpandedSources(prev => {
-            const next = new Set(prev);
+        const next = new Set(expandedSources);
 
-            next.has(index)
-                ? next.delete(index)
-                : next.add(index);
+        next.has(index)
+            ? next.delete(index)
+            : next.add(index);
 
-            return next;
-        });
+        onChange(next);
     };
     const allExpanded = sources.length > 0 && expandedSources.size === sources.length;
     const handleExpandCollapseAll = () => {
-        if (allExpanded) {
-            setExpandedSources(new Set());
-        } else {
-            setExpandedSources(
-                new Set(sources.map((_, index) => index))
-            );
-        }
+        onChange(allExpanded ? new Set() : new Set(sources.map((_, index) => index)));
     };
 
     return (

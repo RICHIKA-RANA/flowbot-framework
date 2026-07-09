@@ -2,7 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { makeChain } from '@/utils/makechain';
 import dbConnect from '@/config/mongodb';
 import { upsertSubscription } from '@/models/subscriptionModel';
-import UserModel, { IUser, upsertUser } from '@/models/userModel';
+import { IUser, upsertUserByEmail } from '@/models/userModel';
+import { upsertUserHistory, pushChatEntry } from '@/models/userHistoryModel';
 import axios from 'axios';
 import { BigQuery } from '@google-cloud/bigquery';
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
@@ -17,7 +18,8 @@ const { htmlToText } = require('html-to-text');
 
 export const config = { api: { bodyParser: { sizeLimit: '100mb' } } };
 
-const SESSION_COOKIE = 'chatbot_session';
+import { SESSION_COOKIE } from '@/pages/api/auth/session';
+import { getVerifiedEmail } from '@/utils/auth';
 
 async function botRequiresAuth(chatBotId: string): Promise<boolean> {
   const loadOpenId = async (id: string) => {
@@ -32,6 +34,50 @@ async function botRequiresAuth(chatBotId: string): Promise<boolean> {
   return !!(openid?.authorization_endpoint && openid?.client_id);
 }
 
+/**
+ * Resolve the logged-in user from session cookies.
+ * Returns the user doc if email is present, null for anonymous sessions.
+ */
+async function resolveUser(req: NextApiRequest): Promise<IUser | null> {
+    try {
+        const email = await getVerifiedEmail(req);
+        // Name is display-only, not used for identity — no need to verify it
+        const rawName = req.cookies["chatbot_user"];
+        const name = rawName ? decodeURIComponent(rawName) : "";
+        return upsertUserByEmail(email, name);
+    } catch {
+        // No valid session token — anonymous user, chat still works
+        return null;
+    }
+}
+
+/**
+ * Persists one Q&A pair to user_histories after a successful response.
+ * Non-fatal — a DB write failure must never break the chat response.
+ */
+async function saveChatHistory(
+    sessionId: string,
+    chatbotId: string,
+    user: IUser | null,
+    question: string,
+    answer: string,
+    graphIds: string[]
+): Promise<void> {
+    try {
+        const email  = user?.email  || null;
+        const userId = user?._id    || null;
+
+        await upsertUserHistory(sessionId, chatbotId, email, userId);
+        await pushChatEntry(sessionId, {
+            question,
+            answer,
+            graphIds: graphIds.filter(Boolean), // drop empty strings
+        });
+    } catch (err) {
+        console.error('saveChatHistory failed (non-fatal):', err);
+    }
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse,
@@ -44,7 +90,6 @@ export default async function handler(
     graphIds, 
     reqQuery,
     chainStatus = false,
-    conversation_id,
   } = req.body;
   const chatBotId = String(req.query.chatBotId || 'default');
 
@@ -74,13 +119,10 @@ export default async function handler(
       return res.status(200).json(response);
     }
 
-    // we have to upsert a new user only if there is no conversation_id in the localstorage;
-    let user: IUser;
-    if (!conversation_id) {
-      user = await upsertUser(chatBotId, session);
-    } else {
-      user = (await UserModel.findById(conversation_id)) as IUser;
-    }
+        // Single user record per person — no session-keyed user records any more.
+        // Anonymous users (no email cookie) get null; the chat still works, just
+        // not linked to a persistent user profile.
+        const user = await resolveUser(req);
 
     const sessionToken = req.cookies[SESSION_COOKIE];
     const headers = {
@@ -88,7 +130,9 @@ export default async function handler(
       ...(sessionToken ? { authorization: `Bearer ${sessionToken}` } : {}),
     };
 
-    return new Promise((resolve, reject) => {
+        // TODO: when "New Chat" button is implemented, pass the new sessionId from
+        //       the frontend so user_histories creates a fresh record for that session.
+    return new Promise((resolve) => {
       import(`@/configuration/${chatBotId}/server`)
         .then(async (module) => {
           try {
@@ -115,6 +159,19 @@ export default async function handler(
               },
               sanitizedQuestion,
             );
+
+            // Save Q&A only when there is an actual question and answer
+            if (sanitizedQuestion && response?.text) {
+                await saveChatHistory(
+                    session,
+                    chatBotId,
+                    user,
+                    sanitizedQuestion,
+                    response.text,
+                    graphIds || []
+                );
+            }
+
             res.status(200).json(response);
             resolve(response);
           } catch (error: any) {
@@ -130,6 +187,7 @@ export default async function handler(
           }
         })
         .catch((error) => {
+    // Fallback to default server config when chatbot-specific one is missing
           import(`@/configuration/default/server`).then(async (module) => {
             const response = await module.start(
               {
@@ -153,6 +211,19 @@ export default async function handler(
               },
               sanitizedQuestion,
             );
+
+        // Save Q&A — fallback path
+        if (sanitizedQuestion && response?.text) {
+            await saveChatHistory(
+                session,
+                chatBotId,
+                user,
+                sanitizedQuestion,
+                response.text,
+                graphIds || []
+            );
+        }
+
             res.status(200).json(response);
             resolve(response);
           });

@@ -1,52 +1,28 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+// Lean user profile — one record per real person, keyed by email.
+// Session tracking lives in user_histories, not here.
 export interface IUser extends Document {
-    lastStep: number;
-    chatbotId: string;
-    sessionId: string;
+    email: string;
+    name: string;
     subscriptionType: string;
-    userData: any[];
     createdAt: Date;
     updatedAt: Date;
-}
-
-interface stepData {
-    key: string;
-    category_id?: string;
-    category_description?: string;
-    answer?: string;
 }
 
 const UserSchema: Schema = new Schema({
     email: {
         type: String,
+        unique: true,   // one record per person
+        sparse: true,   // allows anonymous (null) without unique collision
     },
     name: {
         type: String,
-    },
-    handOverEnabled: {
-        type: Boolean,
-        default: false
+            default: '',
     },
     subscriptionType: {
         type: String,
         default: 'FREE',
-    },
-    sessionId: {
-        type: String,
-        required: true,
-    },
-    chatbotId: {
-        type: String,
-        required: true,
-    },
-    lastStep: {
-        type: Number,
-        default: 0,
-    },
-    userData: {
-        type: Array,
-        default: [],
     },
     createdAt: {
         type: Date,
@@ -60,73 +36,39 @@ const UserSchema: Schema = new Schema({
     versionKey: false,
 });
 
-UserSchema.methods.getlastStep = function () {
-    return this.lastStep;
-};
-
-UserSchema.method('setlastStep', function (value: number) {
-    this.lastStep = value;
-});
-
-UserSchema.method("setUserData", function (data: stepData) {
-    const index = this.userData.findIndex((item: stepData) => item.key === data.key);
-    if (index !== -1) {
-        this.userData[index] = data;
-    } else {
-        this.userData.push(data);
-    }
-});
-
-UserSchema.method("getUserData", function () {
-    return this.userData
-});
-
 UserSchema.method("getUserDocument", function () {
     return this
 });
 
-UserSchema.method("updateUserDetails",  async function (email: string[], name: string) {
-    if (email?.length) {
-        this.email = email[0];
-    }
-    if (name) {
-        this.name = name;
-    }
-    this.updatedAt = Date.now();
+UserSchema.method('updateUserDetails', async function (email: string, name: string) {
+    if (email) this.email = email;
+    if (name)  this.name = name;
+    this.updatedAt = new Date();
     await this.save()
     return this
 });
 
-UserSchema.method("updateHandoverStatus",  async function (status: boolean) {
-    this.handOverEnabled = status;
-    this.updatedAt = Date.now();
-    await this.save()
-    return this
-});
+export const UserModel =
+    mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
 
-UserSchema.method("getData", function (value: string) {
-    return this.userData.find((item: stepData) => item.key == value)
-});
-
-export let UserModel = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
-
-export const upsertUser = async (chatbotId: string, sessionId: string) => {
+/**
+ * Upsert by email — called at login (/api/auth/session) and at chat time.
+ * Creates the user profile if it doesn't exist, updates name if it does.
+ */
+export const upsertUserByEmail = async (
+    email: string,
+    name: string
+): Promise<IUser> => {
     const result = await UserModel.findOneAndUpdate(
-        { sessionId },
+        { email },
         {
-            $setOnInsert: { sessionId, chatbotId },
-            $currentDate: { updatedAt: true }
+            $set:         { name },
+            $setOnInsert: { email, createdAt: new Date() },
+            $currentDate: { updatedAt: true },
         },
-        {
-            new: true, // return the new document rather than the old one
-            upsert: true, // insert the document if it does not exist
-        }
+        { new: true, upsert: true }
     );
-    if (result instanceof UserModel) {
-        return result;
-    } else {
-        return new UserModel(result);
-    }
-}
+    return result as IUser;
+};
 
 export default UserModel;

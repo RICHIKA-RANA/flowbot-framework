@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState, useCallback } from "react";
+import React, { useContext, useRef, useState, useCallback, useEffect } from "react";
 import { useRouter } from 'next/router';
 import ThemeContext from "@/contexts/ThemeContext";
 import { useTainPDF } from "@/hooks/useTrainPDF";
@@ -11,6 +11,7 @@ import { SideDrawerProps, UploadDropZoneProps, UploadFileCardProps, UploadsSecti
 import { formatBytes } from '@/utils/formatBytes';
 import { FILE_TYPE_GLYPH, DEFAULT_FILE_GLYPH, fileTypeKey } from '@/utils/fileType';
 import { FileText, ChevronRight, Wand2, FolderOpen } from 'lucide-react';
+import { PublicDocument } from "@/types/namespace";
 
 const UploadDropZone: React.FC<UploadDropZoneProps> = ({
     styles, dragOver, setDragOver, handleFileDrop, handleFileChange, fileInputRef
@@ -152,87 +153,85 @@ const UploadsSection: React.FC<UploadsSectionProps> = ({
     );
 };
 
-const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentList, switchTab }) => {
-    const [openMenu, setOpenMenu] = useState<number | null>(null);
+const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentList, loading, removeSessionDocument, switchTab }) => {
+    const [openMenu, setOpenMenu] = useState<string | null>(null);
 
     const { JSModule } = useContext(ThemeContext);
-    const trainedDocs = documentList?.filter((d: any) => d.phase == "done") || [];
     return (
         <>
             <div className={styles?.['Divider']} />
-            <div className={styles?.['UploaderHeader']}>Trained Documents</div>
+            <div className={styles?.['UploaderHeader']}>Trained Documents ({documentList.length})</div>
             <div className={styles?.['DataContainer']}>
-                {trainedDocs.length === 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '28px 16px', border: '1px solid #f0f1f3', borderRadius: '12px', background: '#fcfcfd' }}>
-                    <div style={{ color: '#cbd5e1', marginBottom: '8px' }}>
-                        <FolderOpen size={40} strokeWidth={1.6} aria-hidden="true" />
+                {loading && documentList.length === 0 && (
+                    <div className={styles?.['fileStatusLabel']}>Loading documents...</div>
+                )}
+                {!loading && documentList.length === 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '28px 16px', border: '1px solid #f0f1f3', borderRadius: '12px', background: '#fcfcfd' }}>
+                        <div style={{ color: '#cbd5e1', marginBottom: '8px' }}>
+                            <FolderOpen size={40} strokeWidth={1.6} aria-hidden="true" />
+                        </div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#6b7280' }}>{JSModule?.trainedEmptyTitle ?? 'No documents yet'}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '2px' }}>{JSModule?.trainedEmptySubtitle ?? 'Upload a document to get started.'}</div>
                     </div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#6b7280' }}>{JSModule?.trainedEmptyTitle ?? 'No documents yet'}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '2px' }}>{JSModule?.trainedEmptySubtitle ?? 'Upload a document to get started.'}</div>
-                </div>
-            )}
-            {trainedDocs.map((document, index) => (
-                    <div key={index} className={styles?.['fileCard']}>
+                )}
+                {documentList.map((document) => (
+                    <div key={document.jobId} className={styles?.['fileCard']}>
                         <div className={styles?.['fileCardTop']}>
                             <div className={styles?.['fileIcon']}>
                                 <FileTextIcon size={22} stroke="#10b981" />
                             </div>
                             <div className={styles?.['fileMeta']}>
-                                <div className={styles?.['fileName']}>{document?.name || document?.jobId}</div>
+                                <div className={styles?.['fileName']}>{document.fileName || document.jobId}</div>
+                                <div className={styles?.['fileSub']}>
+                                    {formatBytes(document.fileSize || 0)}{document.fileSize ? ' • ' : ''}Done
+                                </div>
                             </div>
-                            <span className={styles?.['fileDoneLabel']}>✓ Done</span>
-                            
-                            {/* More Button */}
                             <div style={{ position: 'relative', marginLeft: '8px' }}>
                                 <button
-                                    onClick={() => setOpenMenu(openMenu === index ? null : index)}
-                                    style={{
-                                        border: 'none',
-                                        background: 'transparent',
-                                        cursor: 'pointer',
-                                        fontSize: '18px',
-                                    }}
+                                    onClick={() => setOpenMenu(openMenu === document.jobId ? null : document.jobId)}
+                                    disabled={document.removing}
+                                    style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
                                 >
-                                    <MoreVertical size={18} />
+                                    {document.removing ? '...' : <MoreVertical size={18} />}
                                 </button>
 
-                                {openMenu === index && (
+                                {openMenu === document.jobId && (
                                     <div
                                         style={{
-                                            position: 'absolute',
-                                            right: 0,
-                                            top: '100%',
-                                            background: '#fff',
-                                            border: '1px solid #ddd',
-                                            borderRadius: '6px',
-                                            boxShadow:
-                                                '0 2px 8px rgba(0,0,0,0.1)',
-                                            zIndex: 100,
-                                            minWidth: '140px',
+                                            position: 'absolute', right: 0, top: '100%', background: '#fff',
+                                            border: '1px solid #ddd', borderRadius: '6px',
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '140px',
                                         }}
                                     >
+                                        {document.graphId && (
+                                            <button
+                                                style={{
+                                                    width: '100%', padding: '8px 12px', textAlign: 'left',
+                                                    border: 'none', background: 'transparent', cursor: 'pointer',
+                                                }}
+                                                onClick={() => {
+                                                    switchTab('documentTree', document.graphId);
+                                                    setOpenMenu(null);
+                                                }}
+                                            >
+                                                View Tree
+                                            </button>
+                                        )}
                                         <button
                                             style={{
-                                                width: '100%',
-                                                padding: '8px 12px',
-                                                textAlign: 'left',
-                                                border: 'none',
-                                                background: 'transparent',
-                                                cursor: 'pointer',
+                                                width: '100%', padding: '8px 12px', textAlign: 'left',
+                                                border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444',
                                             }}
                                             onClick={() => {
-                                                switchTab('documentTree', document?.graphId);
+                                                removeSessionDocument(document.jobId);
                                                 setOpenMenu(null);
                                             }}
                                         >
-                                            View Tree
+                                            Remove
                                         </button>
                                     </div>
                                 )}
                             </div>
-                        </div>
-                        <div className={styles?.['fileProgressBg']}>
-                            <div className={`${styles?.['fileProgressFill']} ${styles?.['fileProgressDone']}`} style={{ width: '100%' }} />
                         </div>
                     </div>
                 ))}
@@ -247,12 +246,28 @@ const DemoFileIcon: React.FC<{ type: string }> = ({ type }) => {
     return <FileText size={26} color={color} strokeWidth={1.75} aria-hidden="true" />;
 };
 
-const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) => {
+const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace, handleSuggestedQueries }) => {
     const { JSModule } = useContext(ThemeContext);
     const themeColor: string = JSModule?.themeColor || '#3b82f6';
     const tryText: string = JSModule?.demoTryButtonText ?? 'Try with a demo document';
     const sectionLabel: string = JSModule?.demoSectionLabel ?? 'Demo documents';
     const orText: string = JSModule?.demoOrText ?? 'or';
+
+    const handleDocumentSelection = (doc:any) => {
+        namespace.setActiveDoc(doc.id);
+        if (doc.suggested_queries) handleSuggestedQueries(doc.suggested_queries)
+    }
+
+    useEffect(() => {
+        if (!namespace.demoActivated) return;
+        if (!namespace.publicDocs?.length) return;
+        
+        if (namespace.activeDoc) {
+            handleDocumentSelection(namespace.activeDoc);
+        } else {
+            handleDocumentSelection(namespace.publicDocs[0]);
+        }
+    }, [ namespace.demoActivated, namespace.publicDocs, handleDocumentSelection]);
 
     if (!namespace.demoActivated) {
         return (
@@ -279,10 +294,9 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) 
             <div className={styles?.['Divider']} />
             <div className={styles?.['UploaderHeader']}>{sectionLabel}</div>
             <div className={styles?.['DataContainer']}>
-                {namespace.publicDocs.map((doc) => {
+                {namespace.publicDocs.map((doc: PublicDocument) => {
                     const type = fileTypeKey(doc);
                     const active = doc.id === namespace.activeDocId;
-                    const select = () => namespace.setActiveDoc(doc.id);
                     return (
                         <div
                             key={doc.id}
@@ -290,8 +304,8 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) 
                             role="button"
                             tabIndex={0}
                             title={doc.description || undefined}
-                            onClick={select}
-                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(); } }}
+                            onClick={() => {handleDocumentSelection(doc)}}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDocumentSelection(doc); } }}
                             style={{ cursor: 'pointer', borderColor: active ? themeColor : undefined, boxShadow: active ? `0 0 0 1px ${themeColor} inset` : undefined }}
                         >
                             <div className={styles?.['fileCardTop']}>
@@ -312,11 +326,11 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace }) 
     );
 };
 
-export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab }) => {
+export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab, handleSuggestedQueries }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const {
-        documentList, setDocumentList, uploads, selectedFileType, setTrainingInProgress,
-        handleFileChange, handleFileDrop, cancelUpload, retryUpload, removeUpload, canCancel
+        uploads, handleFileChange, handleFileDrop, cancelUpload, retryUpload, removeUpload, canCancel,
+        documentList, loadingSessionDocuments, removeSessionDocument
     } = useTainPDF();
     const router = useRouter();
     const { 'chat-id': chatId } = router.query;
@@ -372,7 +386,7 @@ export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace,
 
             {/* Demo path —  hidden once the user has any private doc */}
             {namespace?.mode === 'public' && namespace.publicDocs.length > 0 && uploads.length === 0 && documentList.length === 0 && (
-                <DemoDocsSection styles={styles} namespace={namespace} />
+                <DemoDocsSection styles={styles} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} />
             )}
 
             <UploadsSection
@@ -384,7 +398,13 @@ export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace,
                 removeUpload={removeUpload}
             />
 
-            <TrainedDocuments switchTab={switchTab} styles={styles} documentList={documentList} />
+            <TrainedDocuments
+                styles={styles}
+                documentList={documentList}
+                loading={loadingSessionDocuments}
+                removeSessionDocument={removeSessionDocument}
+                switchTab={switchTab}
+            />
             <ToastContainer />
         </div>
     );

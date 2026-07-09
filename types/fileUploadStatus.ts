@@ -12,8 +12,10 @@ export type FileUploadStatus = {
     stage?: string;
 };
 
-export type ActiveJob = {
-    graphId: string;
+export type SessionDocument = {
     jobId: string;
-    fileName: string;
+    fileName?: string;
+    fileSize?: number;
+    graphId?: string;
+    removing?: boolean;
 };

@@ -1,12 +1,11 @@
-const GRAPH_KEY = 'graphIds';
-const JOB_KEY = 'jobIds';
-const SESSION_ID_KEY = 'currentSessionId';
+import { listSessionDocuments } from '@/apiRequests/ttt';
 
-// Fired whenever the set of session graph ids changes, so same-tab consumers
-// (e.g. the namespace gate in useChatbot) can react to upload completion.
+const SESSION_ID_KEY = 'currentSessionId';
+const JOB_SESSION_KEY = 'jobSessionId';
+
 export const GRAPH_IDS_CHANGED_EVENT = 'graphids-changed';
 
-const notifyGraphIdsChanged = () => {
+export const notifyGraphIdsChanged = () => {
     if (typeof window === 'undefined') return;
     window.dispatchEvent(new Event(GRAPH_IDS_CHANGED_EVENT));
 };
@@ -25,69 +24,27 @@ export const getCurrentSessionId = (): string => {
     return sessionStorage.getItem(SESSION_ID_KEY) || '';
 };
 
+// ─── Job Session ID ───────────────────────────────────────────────────────
+// Groups this tab's document uploads so the TTT backend can hand the list
+// back via GET /v1/documents?session_id=XXX
+
+export const getJobSessionId = (): string => {
+    if (typeof window === 'undefined') return '';
+    let jobSessionId = sessionStorage.getItem(JOB_SESSION_KEY);
+    if (!jobSessionId) {
+        jobSessionId = crypto.randomUUID();
+        sessionStorage.setItem(JOB_SESSION_KEY, jobSessionId);
+    }
+    return jobSessionId;
+};
+
 // ─── Graph IDs ────────────────────────────────────────────────────────────
+// Derived on demand from the backend's session document list (source of
+// truth) rather than tracked in a local sessionStorage array, so it stays
+// correct across reloads and doesn't drift from server state.
 
-export const addGraphId = (graphId: string) => {
-    if (typeof window === 'undefined') return;
-
-    const graphIds = getGraphIds();   
-    // making sure it is not already there;
-    if (!graphIds.includes(graphId)) {
-        graphIds.push(graphId);
-        sessionStorage.setItem(GRAPH_KEY, JSON.stringify(graphIds));
-        notifyGraphIdsChanged();
-    }
-};
-// fetching all stored graphids from the session storage
-export const getGraphIds = (): string[] => {
-    if (typeof window === 'undefined') return [];
-  
-    const value = sessionStorage.getItem(GRAPH_KEY);
-    if (!value) return [];
-
-    try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed)? parsed.filter(id => typeof id === 'string'): [];
-    } catch {
-        return [];
-    }
-};
-// clearing the sessionstorage of graphids
-export const clearGraphIds = () => {
-    if (typeof window === 'undefined') return;
-
-    sessionStorage.removeItem(GRAPH_KEY);
-    notifyGraphIdsChanged();
-};
-
-// ─── Job IDs
-
-export const addJobId = (jobId: string) => {
-    if (typeof window === 'undefined') return;
-
-    const jobIds = getJobIds();
-    if (!jobIds.includes(jobId)) {
-        jobIds.push(jobId);
-        sessionStorage.setItem(JOB_KEY, JSON.stringify(jobIds));
-    }
-};
-
-export const getJobIds = (): string[] => {
-    if (typeof window === 'undefined') return [];
-
-    const value = sessionStorage.getItem(JOB_KEY);
-    if (!value) return [];
-
-    try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed)? parsed.filter(id => typeof id === 'string'): [];
-    } catch {
-        return [];
-    }
-};
-
-export const clearJobIds = () => {
-    if (typeof window === 'undefined') return;
-
-    sessionStorage.removeItem(JOB_KEY);
+export const getGraphIds = async (): Promise<string[] | null> => {
+    const docs = await listSessionDocuments(getJobSessionId());
+    if (!Array.isArray(docs)) return null;
+    return docs.filter((d: any) => d?.state === 'COMPLETED' && d?.result_graph_id).map((d: any) => d.result_graph_id);
 };

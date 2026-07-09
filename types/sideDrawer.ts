@@ -1,16 +1,19 @@
 import React from 'react';
 import { NamespaceState } from '@/types/namespace';
+import { SessionDocument } from '@/types/fileUploadStatus';
 
 export interface SideDrawerProps {
     open: boolean;
     setOpen: (val: boolean) => void;
     switchTab: (tabName: string, graphId?: string) => Promise<void>;
     namespace?: NamespaceState;
+    handleSuggestedQueries: (val: string[]) => void;
 }
 
 export interface DemoDocsSectionProps {
     styles: any;
     namespace: NamespaceState;
+    handleSuggestedQueries: (val: string[]) => void;
 }
 
 export interface UploadDropZoneProps {
@@ -42,6 +45,8 @@ export interface UploadsSectionProps {
 
 export interface TrainedDocumentsProps {
     styles: any;
-    documentList: any[];
+    documentList: SessionDocument[];
+    loading: boolean;
+    removeSessionDocument: (jobId: string) => void;
     switchTab: (tabName: string, graphId?: string) => Promise<void>;
 }

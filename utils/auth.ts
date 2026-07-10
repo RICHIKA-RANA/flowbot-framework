@@ -1,39 +1,43 @@
 import type { NextApiRequest } from 'next';
-import { SESSION_COOKIE } from '@/pages/api/auth/session';
+import crypto from 'crypto';
 
-const GOOGLE_TOKENINFO_URL = 'https://oauth2.googleapis.com/tokeninfo';
+export const EMAIL_COOKIE = 'chatbot_email';
+const AUTH_SECRET = process.env.SESSION_SECRET || '';
+const EMAIL_TOKEN_TTL_SEC = 60 * 60 * 8; // 8h, matches the cookie Max-Age
 
-/**
- * Verifies the Google access token from the session cookie and returns the
- * email address that Google associates with it.
- *
- * Throws an object { status, message } if the token is missing or invalid so
- * API routes can return the right HTTP status directly.
- *
- * Usage in any API route:
- *   const email = await getVerifiedEmail(req);
- */
-export async function getVerifiedEmail(req: NextApiRequest): Promise<string> {
-    const token = req.cookies[SESSION_COOKIE];
+const hmac = (data: string): string =>
+    crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('base64url');
 
-    if (!token) {
-        throw { status: 401, message: 'Not authenticated' };
+// Signs the email into `base64url({email,exp}).hmac` for the chatbot_email cookie.
+export function signEmailToken(email: string): string {
+    const payload = Buffer.from(
+        JSON.stringify({ email, exp: Math.floor(Date.now() / 1000) + EMAIL_TOKEN_TTL_SEC })
+    ).toString('base64url');
+    return `${payload}.${hmac(payload)}`;
+}
+
+// Returns the email if the signature and expiry are valid, else null.
+export function verifyEmailToken(token: string | undefined): string | null {
+    if (!token || !AUTH_SECRET) return null;
+    const [payload, sig] = token.split('.');
+    if (!payload || !sig) return null;
+
+    const expected = hmac(payload);
+    const a = new Uint8Array(Buffer.from(sig));
+    const b = new Uint8Array(Buffer.from(expected));
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+    try {
+        const { email, exp } = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+        if (!email || typeof exp !== 'number' || exp < Math.floor(Date.now() / 1000)) return null;
+        return email as string;
+    } catch {
+        return null;
     }
+}
 
-    const response = await fetch(
-        `${GOOGLE_TOKENINFO_URL}?access_token=${encodeURIComponent(token)}`
-    );
-
-    if (!response.ok) {
-        // Token is expired or invalid
-        throw { status: 401, message: 'Session expired, please log in again' };
-    }
-
-    const data = await response.json();
-
-    if (!data.email) {
-        throw { status: 401, message: 'Could not verify identity' };
-    }
-
-    return data.email as string;
+export function getVerifiedEmail(req: NextApiRequest): string {
+    const email = verifyEmailToken(req.cookies[EMAIL_COOKIE]);
+    if (!email) throw { status: 401, message: 'Session expired, please log in again' };
+    return email;
 }

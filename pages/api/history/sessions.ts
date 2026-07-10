@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/config/mongodb';
-import { UserHistoryModel } from '@/models/userHistoryModel';
+import { UserHistoryModel, IUserHistory } from '@/models/userHistoryModel';
 import { getVerifiedEmail } from '@/utils/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
             const record = await UserHistoryModel
                 .findOne({ sessionId, email })  // email scope prevents cross-user reads
-                .lean();
+                .lean<IUserHistory | null>();
 
             if (!record) {
                 return res.status(404).json({ error: 'Session not found' });
@@ -79,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 createdAt: 1,
                 chats:     { $slice: 1 },  // only first chat entry for preview
             })
-            .lean();
+            .lean<IUserHistory[]>();
 
         const response = sessions.map((s) => ({
             sessionId:     s.sessionId,

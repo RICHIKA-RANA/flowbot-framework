@@ -12,7 +12,7 @@ import type { Socket } from 'socket.io-client';
 import ThemeContext from '@/contexts/ThemeContext';
 import { generateRandomString } from '@/utils/generateRandomeString';
 import { getDocumentNameAndPageNumber } from '@/utils/extractDocumentNameAndPage';
-import { getGraphIds, GRAPH_IDS_CHANGED_EVENT, setCurrentSessionId } from '@/utils/sessionJobs';
+import { getGraphIds, GRAPH_IDS_CHANGED_EVENT, SESSION_CHANGED_EVENT, setCurrentSessionId, resetJobSessionId } from '@/utils/sessionJobs';
 import { listPublicNamespaces, listPublicNamespaceDocuments } from '@/apiRequests/ttt';
 import { NamespaceMode, PublicDocument, NamespaceState } from '@/types/namespace';
 // TODO(demo-seed): temporary frontend demo docs; remove once demo-library is seeded on the backend
@@ -73,10 +73,14 @@ export const useChatbot = () => {
     useEffect(() => {
         const bump = () => setGraphIdsVersion((v) => v + 1);
         window.addEventListener(GRAPH_IDS_CHANGED_EVENT, bump);
-        window.addEventListener('focus', bump);
+        const onSessionChanged = () => {
+            setCachedGraphIds([]);
+            setHasPrivateDocs(false);
+        };
+        window.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
         return () => {
             window.removeEventListener(GRAPH_IDS_CHANGED_EVENT, bump);
-            window.removeEventListener('focus', bump);
+            window.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
         };
     }, []);
 
@@ -95,7 +99,8 @@ export const useChatbot = () => {
     const namespaceMode: NamespaceMode = hasPrivateDocs ? 'private' : 'public';
 
     useEffect(() => {
-        if (hasPrivateDocs) return;
+        if (hasPrivateDocs) return;          // a private-doc session exists → public not needed
+        if (publicDocs.length > 0) return;   // demo docs are static → fetch once, then reuse
         let cancelled = false;
         (async () => {
             // Discover the public (demo) namespace, then load its documents.
@@ -110,7 +115,7 @@ export const useChatbot = () => {
             setActiveDocId((prev) => prev ?? docs[0]?.id ?? null);
         })();
         return () => { cancelled = true; };
-    }, [hasPrivateDocs, graphIdsVersion]);
+    }, [hasPrivateDocs, publicDocs.length]);
 
     const activeDoc = publicDocs.find((d) => d.id === activeDocId) || null;
     const resolveGraphIds = (): string[] =>
@@ -790,6 +795,18 @@ export const useChatbot = () => {
         }
     };
 
+    const startNewChat = () => {
+        const newSessionId = generateRandomString('session_', 9);
+        setCurrentSession(newSessionId);
+        setCurrentSessionId(newSessionId);
+        resetJobSessionId();
+        setMessageState({ messages: [], history: [] });
+        setReferences([]);
+        setQuery('');
+        if (typeof window !== 'undefined') localStorage.removeItem('conversation_id');
+        setRoomId('');
+    };
+
     return {
         chatId,
         messages,
@@ -818,5 +835,7 @@ export const useChatbot = () => {
         authError,
         setAuthError,
         namespace,
+        currentSession,
+        startNewChat,
     };
 };

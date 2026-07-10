@@ -326,7 +326,7 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace, ha
     );
 };
 
-export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab, handleSuggestedQueries }) => {
+export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab, handleSuggestedQueries, hideDemoDocs }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const {
         uploads, handleFileChange, handleFileDrop, cancelUpload, retryUpload, removeUpload, canCancel,
@@ -384,8 +384,7 @@ export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace,
                 fileInputRef={fileInputRef}
             />
 
-            {/* Demo path —  hidden once the user has any private doc */}
-            {namespace?.mode === 'public' && namespace.publicDocs.length > 0 && uploads.length === 0 && documentList.length === 0 && (
+            {!hideDemoDocs && namespace?.mode === 'public' && namespace.publicDocs.length > 0 && uploads.length === 0 && documentList.length === 0 && (
                 <DemoDocsSection styles={styles} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} />
             )}
 

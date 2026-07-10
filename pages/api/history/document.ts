@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import mongoose from 'mongoose';
 import dbConnect from '@/config/mongodb';
 import { upsertUserHistory, pushDocumentEntry } from '@/models/userHistoryModel';
 import UserModel from '@/models/userModel';
@@ -20,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         await dbConnect();
 
-        const user = await UserModel.findOne({ email }).select('_id').lean();
+        const user = await UserModel.findOne({ email }).select('_id').lean<{ _id: mongoose.Types.ObjectId } | null>();
         const userId = user?._id || null;
 
         await upsertUserHistory(sessionId, chatbotId || '', email, userId);

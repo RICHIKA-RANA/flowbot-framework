@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         await dbConnect();
 
-        const user = await UserModel.findOne({ email }).select('_id').lean();
+        const user: any= await UserModel.findOne({ email }).select('_id').lean();
         const userId = user?._id || null;
 
         await upsertUserHistory(sessionId, chatbotId || '', email, userId);

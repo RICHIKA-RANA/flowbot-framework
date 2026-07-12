@@ -47,9 +47,7 @@ export const resetJobSessionId = (): string => {
 };
 
 // currentSessionId's, which is already regenerated on every fresh mount.
-if (typeof window !== 'undefined') {
-    resetJobSessionId();
-}
+resetJobSessionId();
 
 // ─── Graph IDs ────────────────────────────────────────────────────────────
 // Derived on demand from the backend's session document list (source of

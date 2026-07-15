@@ -14,6 +14,8 @@ export { default as InstallationInfo } from './InstallationInfo/InstallationInfo
 export { default as Invoice } from './Invoice/Invoice';
 export { default as ErrorAlert } from './ErrorAlert/ErrorAlert';
 export { default as Loader } from './Loader/Loader';
+export { default as MenuItem } from './MenuItem/MenuItem';
+export { default as ConfirmDialog } from './ConfirmDialog/ConfirmDialog';
 export { default as LoginPasswordAsk } from './LoginPasswordAsk/LoginPasswordAsk';
 export { default as MultiSelectInput } from './MutiSelectInput/MultiSelectInput';
 export { default as ProjectCard } from './ProjectCard/ProjectCard';

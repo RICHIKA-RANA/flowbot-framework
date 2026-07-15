@@ -30,3 +30,11 @@ export interface HistorySessionDetail {
     documents: HistoryDocumentEntry[];
     chats: HistoryChatEntry[];
 }
+
+export interface HistorySidebarProps {
+    selectedSessionId: string | null;
+    onSelectSession: (sessionId: string) => void;
+    onNewChat: () => void;
+    reloadToken: number;
+    onCountChange?: (count: number) => void;
+}

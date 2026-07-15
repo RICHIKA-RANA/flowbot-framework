@@ -12,7 +12,7 @@ import type { Socket } from 'socket.io-client';
 import ThemeContext from '@/contexts/ThemeContext';
 import { generateRandomString } from '@/utils/generateRandomeString';
 import { getDocumentNameAndPageNumber } from '@/utils/extractDocumentNameAndPage';
-import { getGraphIds, GRAPH_IDS_CHANGED_EVENT, SESSION_CHANGED_EVENT, setCurrentSessionId, resetJobSessionId } from '@/utils/sessionJobs';
+import { GRAPH_IDS_CHANGED_EVENT, SESSION_CHANGED_EVENT, getGraphIds, resetJobSessionId, setCurrentSessionId } from '@/utils/sessionJobs';
 import { listPublicNamespaces, listPublicNamespaceDocuments } from '@/apiRequests/ttt';
 import { NamespaceMode, PublicDocument, NamespaceState } from '@/types/namespace';
 // TODO(demo-seed): temporary frontend demo docs; remove once demo-library is seeded on the backend

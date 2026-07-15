@@ -1,15 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageSquare, Plus, MoreVertical, Trash2, Eye, Settings, Trash } from 'lucide-react';
-import { listHistorySessions, deleteHistorySession } from '@/apiRequests/history';
-import { HistorySessionSummary } from '@/types/history';
-
-interface HistorySidebarProps {
-    selectedSessionId: string | null;
-    onSelectSession: (sessionId: string) => void;
-    onNewChat: () => void;
-    reloadToken: number;
-    onCountChange?: (count: number) => void;
-}
+import { MessageSquare, Plus, MoreVertical, Trash2, Eye, Settings } from 'lucide-react';
+import { listHistorySessions, deleteHistorySession } from '@/apiRequests';
+import { MenuItem, ConfirmDialog } from '@/components/ui';
+import { HistorySessionSummary, HistorySidebarProps } from '@/types/history';
 
 const COLORS = {
     accent: '#3b82f6',
@@ -31,6 +24,7 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
     const [menuFor, setMenuFor] = useState<string | null>(null);
     const [pendingDelete, setPendingDelete] = useState<HistorySessionSummary | null>(null);
     const [deleting, setDeleting] = useState<boolean>(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
     const load = useCallback(async () => {
@@ -59,9 +53,11 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
     const confirmDelete = async () => {
         if (!pendingDelete) return;
         setDeleting(true);
-        const ok = await deleteHistorySession(pendingDelete.sessionId);
+        setDeleteError(null);
+        const { ok, status } = await deleteHistorySession(pendingDelete.sessionId);
         setDeleting(false);
-        if (ok) {
+        // 404 = already gone → treat as removed. Only a real failure (500/network) errors.
+        if (ok || status === 404) {
             setSessions((prev) => {
                 const next = prev.filter((s) => s.sessionId !== pendingDelete.sessionId);
                 onCountChange?.(next.length);
@@ -70,8 +66,10 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
             if (selectedSessionId === pendingDelete.sessionId) {
                 onNewChat(); // deleted the session we were viewing → back to live chat
             }
+            setPendingDelete(null);
+        } else {
+            setDeleteError('Couldn’t delete this chat. Please try again.');
         }
-        setPendingDelete(null);
     };
 
     return (
@@ -217,6 +215,7 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
                                             danger
                                             onClick={() => {
                                                 setMenuFor(null);
+                                                setDeleteError(null);
                                                 setPendingDelete(s);
                                             }}
                                         />
@@ -253,9 +252,14 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
             </div>
 
             {pendingDelete && (
-                <DeleteDialog
-                    deleting={deleting}
-                    onCancel={() => setPendingDelete(null)}
+                <ConfirmDialog
+                    title="Delete this chat?"
+                    message="This action cannot be undone."
+                    confirmLabel="Delete"
+                    danger
+                    loading={deleting}
+                    error={deleteError ?? undefined}
+                    onCancel={() => { setPendingDelete(null); setDeleteError(null); }}
                     onConfirm={confirmDelete}
                 />
             )}
@@ -291,129 +295,6 @@ const EmptyState: React.FC = () => (
         <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>No recent sessions</div>
         <div style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5 }}>
             Your recent queries will appear here.
-        </div>
-    </div>
-);
-
-interface MenuItemProps {
-    icon: React.ReactNode;
-    label: string;
-    onClick: () => void;
-    danger?: boolean;
-}
-
-const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onClick, danger }) => (
-    <button
-        onClick={onClick}
-        style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            width: '100%',
-            padding: '9px 14px',
-            border: 'none',
-            background: 'none',
-            cursor: 'pointer',
-            fontSize: 14,
-            fontFamily: 'inherit',
-            textAlign: 'left',
-            color: danger ? COLORS.danger : '#374151',
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.background = '#f9fafb')}
-        onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-    >
-        {icon}
-        {label}
-    </button>
-);
-
-interface DeleteDialogProps {
-    deleting: boolean;
-    onCancel: () => void;
-    onConfirm: () => void;
-}
-
-const DeleteDialog: React.FC<DeleteDialogProps> = ({ deleting, onCancel, onConfirm }) => (
-    <div
-        onClick={onCancel}
-        style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(17,24,39,0.45)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-        }}
-    >
-        <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-                width: 340,
-                background: '#fff',
-                borderRadius: 16,
-                padding: '28px 24px 20px',
-                textAlign: 'center',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-            }}
-        >
-            <div
-                style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: '50%',
-                    background: '#fef2f2',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 16px',
-                }}
-            >
-                <Trash size={24} color={COLORS.danger} />
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 6 }}>
-                Delete this chat?
-            </div>
-            <div style={{ fontSize: 14, color: COLORS.textMuted, marginBottom: 24 }}>
-                This action cannot be undone.
-            </div>
-            <div style={{ display: 'flex', gap: 12 }}>
-                <button
-                    onClick={onCancel}
-                    disabled={deleting}
-                    style={{
-                        flex: 1,
-                        padding: '10px 0',
-                        border: `1px solid ${COLORS.border}`,
-                        borderRadius: 8,
-                        background: '#f9fafb',
-                        color: '#374151',
-                        fontSize: 14,
-                        fontWeight: 500,
-                        cursor: deleting ? 'default' : 'pointer',
-                    }}
-                >
-                    Cancel
-                </button>
-                <button
-                    onClick={onConfirm}
-                    disabled={deleting}
-                    style={{
-                        flex: 1,
-                        padding: '10px 0',
-                        border: 'none',
-                        borderRadius: 8,
-                        background: COLORS.danger,
-                        color: '#fff',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        cursor: deleting ? 'default' : 'pointer',
-                        opacity: deleting ? 0.7 : 1,
-                    }}
-                >
-                    {deleting ? 'Deleting…' : 'Delete'}
-                </button>
-            </div>
         </div>
     </div>
 );

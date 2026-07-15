@@ -1,4 +1,5 @@
 import { ChatbotsResponse, LiveChatbot } from "@/types/chat";
+import { HistorySessionSummary, HistorySessionDetail } from "@/types/history";
 import { axiosPDFInstance, axiosConvInstance } from "@/utils/axiosInstance"
 import axios from 'axios';
 
@@ -193,10 +194,45 @@ export const updateConfig = async (chatbotId: string, type: string, content: str
             type,
             content
         }
-          
+
         const res = await axios.post(`/api/chatbot/${chatbotId}`, body)
         return res
     } catch (error) {
         return null
+    }
+}
+
+
+// ─── Chat history ───────
+
+export const listHistorySessions = async (): Promise<HistorySessionSummary[]> => {
+    try {
+        const { data } = await axios.get(`/api/history/sessions`)
+        return Array.isArray(data?.sessions) ? data.sessions : []
+    } catch (error) {
+        return []
+    }
+}
+
+export const getHistorySession = async (sessionId: string): Promise<HistorySessionDetail | null> => {
+    try {
+        const { data } = await axios.get(`/api/history/sessions`, { params: { sessionId } })
+        return data
+    } catch (error) {
+        return null
+    }
+}
+
+export const deleteHistorySession = async (
+    sessionId: string
+): Promise<{ ok: boolean; status?: number }> => {
+    try {
+        await axios.delete(`/api/history/sessions`, { params: { sessionId } })
+        return { ok: true }
+    } catch (error) {
+        // Surface the status so the UI can treat 404 (already deleted) as success
+        // and only show an error for real failures (500, network).
+        const status = axios.isAxiosError(error) ? error.response?.status : undefined
+        return { ok: false, status }
     }
 }

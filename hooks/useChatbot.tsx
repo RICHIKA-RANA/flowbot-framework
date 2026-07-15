@@ -139,6 +139,7 @@ export const useChatbot = () => {
 
     // Poll session status: fires on mount, on tab focus, and every 5 min while tab is visible.
     useEffect(() => {
+        if (!router.isReady) return;
         let initialised = false;
         const checkSession = () => {
             if (document.visibilityState !== 'visible') return;
@@ -160,14 +161,16 @@ export const useChatbot = () => {
                 });
         };
 
-        checkSession();
+        if (!openidCode) {
+            checkSession();
+        }
         const id = setInterval(checkSession, 5 * 60 * 1000);
         document.addEventListener('visibilitychange', checkSession);
         return () => {
             clearInterval(id);
             document.removeEventListener('visibilitychange', checkSession);
         };
-    }, []);
+    }, [router.isReady, openidCode]);
 
     // Check if OpenID is configured
     const hasOpenID = JSModule?.openid?.authorization_endpoint && JSModule?.openid?.client_id;
@@ -194,7 +197,6 @@ export const useChatbot = () => {
         if (JSModule?.handleHeaderPane) {
             JSModule.handleHeaderPane('logout');
         }
-        window.location.reload();
     };
     const { messages, history } = messageState;
     // Effect for initializing chat and socket
@@ -349,9 +351,14 @@ export const useChatbot = () => {
     useEffect(() => {
         const controller = new AbortController();
 
+        const fail = (message: string) => {
+            setAuthError(message);
+            setIsCheckingSession(false);
+        };
+
         const fetchToken = async () => {
             if (oauthError) {
-                setAuthError('Authentication was cancelled or interrupted. No account was created.');
+                fail('Authentication was cancelled or interrupted. No account was created.');
                 return;
             }
 
@@ -359,7 +366,7 @@ export const useChatbot = () => {
                 const returnedState = router.query.state;
                 const savedState = sessionStorage.getItem('oauth_state');
                 if (!returnedState || returnedState !== savedState) {
-                    setAuthError('Authentication failed due to a security check. Please try again.');
+                    fail('Authentication failed due to a security check. Please try again.');
                     return;
                 }
                 sessionStorage.removeItem('oauth_state');
@@ -379,13 +386,15 @@ export const useChatbot = () => {
                     });
 
                     if (response.ok) {
-                        window.location.href = `/?chat-id=${chatId}`;
+                        setIsLoggedIn(true);
+                        setIsCheckingSession(false);
+                        router.replace(`/?chat-id=${chatId}`, undefined, { shallow: true });
                     } else {
-                        setAuthError('We couldn\'t sign you in. Please try again.');
+                        fail('We couldn\'t sign you in. Please try again.');
                     }
                 } catch (err) {
                     if ((err as Error).name === 'AbortError') return;
-                    setAuthError('Something went wrong while trying to sign in. Please try again.');
+                    fail('Something went wrong while trying to sign in. Please try again.');
                 }
             }
         };

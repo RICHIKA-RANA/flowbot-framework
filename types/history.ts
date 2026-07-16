@@ -38,3 +38,7 @@ export interface HistorySidebarProps {
     reloadToken: number;
     onCountChange?: (count: number) => void;
 }
+
+export interface PastConversationProps {
+    sessionId: string;
+}

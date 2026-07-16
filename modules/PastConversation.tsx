@@ -3,10 +3,9 @@ import { FileText } from 'lucide-react';
 import { ChatMessages } from '@/modules/ChatMessages';
 import { Loader, ErrorAlert } from '@/components/ui';
 import { getHistorySession } from '@/apiRequests';
-import { HistorySessionDetail, HistoryDocumentEntry } from '@/types/history';
+import { HistorySessionDetail, HistoryDocumentEntry, PastConversationProps } from '@/types/history';
 import { Message } from '@/types/chat';
 
-const LOTTIE_LOADER = 'https://lottie.host/d1fd738a-f930-465e-b6ff-cf2412f791db/8r36ZWTWb2.json';
 const noop = () => {};
 
 // Past session Q&A → the Message shape ChatMessages renders (read-only).
@@ -45,10 +44,6 @@ const Footer: React.FC<{ documents: HistoryDocumentEntry[] }> = ({ documents }) 
     </div>
 );
 
-interface PastConversationProps {
-    sessionId: string;
-}
-
 // Read-only view of a saved session: fetches it and replays the Q&A through
 // the shared ChatMessages UI, with a Sources + "past conversation" footer.
 const PastConversation: React.FC<PastConversationProps> = ({ sessionId }) => {
@@ -73,7 +68,7 @@ const PastConversation: React.FC<PastConversationProps> = ({ sessionId }) => {
         return (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                 <div style={{ width: 120, height: 120 }}>
-                    <Loader loader={LOTTIE_LOADER} />
+                    <Loader />
                 </div>
             </div>
         );

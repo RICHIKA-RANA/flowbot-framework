@@ -13,8 +13,6 @@ import SuggestedQueries from '@/modules/SuggestedQueries';
 import HistorySidebar from '@/modules/HistorySidebar';
 import PastConversation from '@/modules/PastConversation';
 
-const LOTTIE_LOADER = 'https://lottie.host/d1fd738a-f930-465e-b6ff-cf2412f791db/8r36ZWTWb2.json';
-
 const Chatbot: React.FC = () => {
   const {
     messages,
@@ -122,7 +120,7 @@ const Chatbot: React.FC = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <div style={{ width: '150px', height: '150px' }}>
-          <Loader loader={LOTTIE_LOADER} />
+          <Loader />
         </div>
       </div>
     );
@@ -142,7 +140,7 @@ const Chatbot: React.FC = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <div style={{ width: '150px', height: '150px' }}>
-          <Loader loader={LOTTIE_LOADER} />
+          <Loader />
         </div>
       </div>
     )
@@ -233,7 +231,7 @@ const Chatbot: React.FC = () => {
                       documentTreeLoading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                           <div style={{ width: '150px', height: '150px' }}>
-                            <Loader loader={LOTTIE_LOADER} />
+                            <Loader />
                           </div>
                         </div>
                       ) : (                

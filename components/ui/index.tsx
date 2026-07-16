@@ -12,6 +12,7 @@ export { default as PasswordInput } from './Input/PasswordInput';
 export { default as TextInput } from './Input/TextInput';
 export { default as InstallationInfo } from './InstallationInfo/InstallationInfo';
 export { default as Invoice } from './Invoice/Invoice';
+export { default as EmptyState } from './EmptyState/EmptyState';
 export { default as ErrorAlert } from './ErrorAlert/ErrorAlert';
 export { default as Loader } from './Loader/Loader';
 export { default as MenuItem } from './MenuItem/MenuItem';

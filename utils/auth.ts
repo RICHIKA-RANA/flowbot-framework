@@ -9,23 +9,23 @@ const hmac = (data: string): string =>
     crypto.createHmac('sha256', AUTH_SECRET).update(data).digest('base64url');
 
 // Signs the email into `base64url({email,exp}).hmac` for the chatbot_email cookie.
-export function signEmailToken(email: string): string {
+export const signEmailToken = (email: string): string => {
     const payload = Buffer.from(
         JSON.stringify({ email, exp: Math.floor(Date.now() / 1000) + EMAIL_TOKEN_TTL_SEC })
     ).toString('base64url');
     return `${payload}.${hmac(payload)}`;
-}
+};
 
 // Returns the email if the signature and expiry are valid, else null.
-export function verifyEmailToken(token: string | undefined): string | null {
+export const verifyEmailToken = (token: string | undefined): string | null => {
     if (!token || !AUTH_SECRET) return null;
     const [payload, sig] = token.split('.');
     if (!payload || !sig) return null;
 
-    const expected = hmac(payload);
-    const a = new Uint8Array(Buffer.from(sig));
-    const b = new Uint8Array(Buffer.from(expected));
-    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+    const expectedSig = hmac(payload);
+    const sigBytes = new Uint8Array(Buffer.from(sig));
+    const expectedSigBytes = new Uint8Array(Buffer.from(expectedSig));
+    if (sigBytes.length !== expectedSigBytes.length || !crypto.timingSafeEqual(sigBytes, expectedSigBytes)) return null;
 
     try {
         const { email, exp } = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
@@ -34,10 +34,10 @@ export function verifyEmailToken(token: string | undefined): string | null {
     } catch {
         return null;
     }
-}
+};
 
-export function getVerifiedEmail(req: NextApiRequest): string {
+export const getVerifiedEmail = (req: NextApiRequest): string => {
     const email = verifyEmailToken(req.cookies[EMAIL_COOKIE]);
     if (!email) throw { status: 401, message: 'Session expired, please log in again' };
     return email;
-}
+};

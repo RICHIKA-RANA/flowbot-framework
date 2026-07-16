@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { MessageSquare, Plus, MoreVertical, Trash2, Eye, Settings } from 'lucide-react';
 import { listHistorySessions, deleteHistorySession } from '@/apiRequests';
-import { MenuItem, ConfirmDialog } from '@/components/ui';
+import { MenuItem, ConfirmDialog, EmptyState } from '@/components/ui';
 import { HistorySessionSummary, HistorySidebarProps } from '@/types/history';
 
 const COLORS = {
@@ -266,37 +266,5 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
         </div>
     );
 };
-
-const EmptyState: React.FC = () => (
-    <div
-        style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textAlign: 'center',
-            padding: '40px 16px',
-            gap: 12,
-        }}
-    >
-        <div
-            style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                background: '#f3f4f6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-            }}
-        >
-            <MessageSquare size={28} color={COLORS.textMuted} />
-        </div>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#111827' }}>No recent sessions</div>
-        <div style={{ fontSize: 13, color: COLORS.textMuted, lineHeight: 1.5 }}>
-            Your recent queries will appear here.
-        </div>
-    </div>
-);
 
 export default HistorySidebar;

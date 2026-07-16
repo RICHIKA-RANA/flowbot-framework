@@ -1,11 +1,5 @@
 import React from 'react';
-
-export interface MenuItemProps {
-    icon?: React.ReactNode;
-    label: string;
-    onClick: () => void;
-    danger?: boolean;
-}
+import { MenuItemProps } from '@/types/ui';
 
 // Generic icon + label action row for dropdown/context menus.
 const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onClick, danger }) => (

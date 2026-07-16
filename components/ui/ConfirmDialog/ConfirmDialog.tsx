@@ -1,16 +1,6 @@
 import React from 'react';
 import { Trash } from 'lucide-react';
-
-export interface ConfirmDialogProps {
-    title: string;
-    message?: string;
-    confirmLabel?: string;
-    danger?: boolean;
-    loading?: boolean;
-    error?: string;
-    onCancel: () => void;
-    onConfirm: () => void;
-}
+import { ConfirmDialogProps } from '@/types/ui';
 
 // Generic confirmation modal (icon + title + message + cancel/confirm).
 // Reusable for any "are you sure?" action; pass `danger` for destructive ones.
@@ -61,9 +51,26 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             >
                 <Trash size={24} color={danger ? '#ef4444' : '#3b82f6'} />
             </div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#111827', marginBottom: 6 }}>{title}</div>
-            {message && <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>{message}</div>}
-            {error && <div style={{ fontSize: 13, color: '#ef4444', marginBottom: 16 }}>{error}</div>}
+            <div
+                style={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: '#111827',
+                    marginBottom: 6,
+                }}
+            >
+                {title}
+            </div>
+            {message && (
+                <div style={{ fontSize: 14, color: '#6b7280', marginBottom: 24 }}>
+                    {message}
+                </div>
+            )}
+            {error && (
+                <div style={{ fontSize: 13, color: '#ef4444', marginBottom: 16 }}>
+                    {error}
+                </div>
+            )}
             <div style={{ display: 'flex', gap: 12 }}>
                 <button
                     onClick={onCancel}

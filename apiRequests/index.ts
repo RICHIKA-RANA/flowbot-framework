@@ -202,7 +202,6 @@ export const updateConfig = async (chatbotId: string, type: string, content: str
     }
 }
 
-
 // ─── Chat history ───────
 
 export const listHistorySessions = async (): Promise<HistorySessionSummary[]> => {

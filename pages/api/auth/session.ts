@@ -1,10 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/config/mongodb';
 import { upsertUserByEmail } from '@/models/userModel';
+import { signEmailToken, verifyEmailToken, EMAIL_COOKIE } from '@/utils/auth';
 
 export const SESSION_COOKIE = 'chatbot_session';
 export const USER_COOKIE = 'chatbot_user';
-export const EMAIL_COOKIE = 'chatbot_email';
 const SESSION_MAX_AGE = 60 * 60 * 8; // 8 hours
 
 function buildSetCookieHeader(name: string, value: string, maxAge: number): string {
@@ -59,9 +59,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (req.method === 'GET') {
             const token = req.cookies[SESSION_COOKIE];
             const rawName = req.cookies[USER_COOKIE];
-            const rawEmail = req.cookies[EMAIL_COOKIE];
             const name = rawName ? decodeURIComponent(rawName) : '';
-            const email = rawEmail ? decodeURIComponent(rawEmail) : '';
+            // chatbot_email is a signed token now — verify to extract for display.
+            const email = verifyEmailToken(req.cookies[EMAIL_COOKIE]) || '';
             return res.status(200).json({ isLoggedIn: !!token, name, email });
         }
 
@@ -124,7 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             res.setHeader('Set-Cookie', [
                 buildSetCookieHeader(SESSION_COOKIE, access_token, SESSION_MAX_AGE),
                 buildSetCookieHeader(USER_COOKIE, encodeURIComponent(displayName), SESSION_MAX_AGE),
-                buildSetCookieHeader(EMAIL_COOKIE, encodeURIComponent(email), SESSION_MAX_AGE),
+                buildSetCookieHeader(EMAIL_COOKIE, email ? signEmailToken(email) : '', SESSION_MAX_AGE),
             ]);
             return res.status(200).json({ success: true });
         }

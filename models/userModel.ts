@@ -71,4 +71,11 @@ export const upsertUserByEmail = async (
     return result as IUser;
 };
 
+export const getUserIdByEmail = async (
+    email: string
+): Promise<mongoose.Types.ObjectId | null> => {
+    const user = await UserModel.findOne({ email }).select('_id').lean<{ _id: mongoose.Types.ObjectId } | null>();
+    return user?._id ?? null;
+};
+
 export default UserModel;

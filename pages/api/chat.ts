@@ -20,6 +20,7 @@ export const config = { api: { bodyParser: { sizeLimit: '100mb' } } };
 
 import { SESSION_COOKIE } from '@/pages/api/auth/session';
 import { getVerifiedEmail } from '@/utils/auth';
+import appConfig from '@/config/constants';
 
 async function botRequiresAuth(chatBotId: string): Promise<boolean> {
   const loadOpenId = async (id: string) => {
@@ -124,10 +125,9 @@ export default async function handler(
         // not linked to a persistent user profile.
         const user = await resolveUser(req);
 
-    const sessionToken = req.cookies[SESSION_COOKIE];
     const headers = {
       ...req.headers,
-      ...(sessionToken ? { authorization: `Bearer ${sessionToken}` } : {}),
+      authorization: `Bearer ${appConfig.TDB_TTT_SERVICE_AUTHORIZATION}`,
     };
 
         // TODO: when "New Chat" button is implemented, pass the new sessionId from

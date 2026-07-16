@@ -26,9 +26,10 @@ interface ChatMessageProps {
     messages: Message[]
     references: IReferences[]
     onUploadClick?: () => void
+    footer?: React.ReactNode
 }
 
-export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loading, handleSubmit, typingState, handleFileUpload, references, onUploadClick }) => {
+export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loading, handleSubmit, typingState, handleFileUpload, references, onUploadClick, footer }) => {
 
     const [expandedMessageIndex, setExpandedMessageIndex] = useState<number | null>(null);
     const [selectedSourceReferences, setSelectedSourceReferences] = useState<Document[]>([]);
@@ -43,6 +44,13 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
             messageListRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
     }, [messages]);
+
+    useEffect(() => {
+        if (expandedMessageIndex !== null && expandedMessageIndex >= messages.length) {
+            setExpandedMessageIndex(null);
+            setSelectedSourceReferences([]);
+        }
+    }, [messages.length, expandedMessageIndex]);
 
     const createMarkup = (question: any) => {
         return { __html: question };
@@ -314,6 +322,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                 </Fragment>
                             )
                     })}
+                    {footer}
                     {/* Dummy div to scroll into view */}
                     <div ref={messageListRef} />
                 </div>

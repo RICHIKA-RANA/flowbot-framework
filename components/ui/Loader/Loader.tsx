@@ -19,7 +19,7 @@ const Loader: React.FC<LoaderProps> = ({ loader }) => {
           renderer: 'svg',
           loop: true,
           autoplay: true,
-          path: loader ? loader : 'https://lottie.host/43ec45fc-8d19-4b9f-8f22-ed906d42db71/xdmFrfrtKB.json'
+          path: loader ? loader : 'https://lottie.host/d1fd738a-f930-465e-b6ff-cf2412f791db/8r36ZWTWb2.json'
         });
       });
     }

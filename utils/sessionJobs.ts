@@ -4,6 +4,7 @@ const SESSION_ID_KEY = 'currentSessionId';
 const JOB_SESSION_KEY = 'jobSessionId';
 
 export const GRAPH_IDS_CHANGED_EVENT = 'graphids-changed';
+export const SESSION_CHANGED_EVENT = 'session-changed';
 
 export const notifyGraphIdsChanged = () => {
     if (typeof window === 'undefined') return;
@@ -38,16 +39,12 @@ export const getJobSessionId = (): string => {
     return jobSessionId;
 };
 
-// currentSessionId instead of living for the lifetime of the browser tab.
-export const resetJobSessionId = (): string => {
-    if (typeof window === 'undefined') return '';
+export const resetJobSessionId = (): void => {
+    if (typeof window === 'undefined') return;
     const jobSessionId = crypto.randomUUID();
     sessionStorage.setItem(JOB_SESSION_KEY, jobSessionId);
-    return jobSessionId;
+    window.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
 };
-
-// currentSessionId's, which is already regenerated on every fresh mount.
-resetJobSessionId();
 
 // ─── Graph IDs ────────────────────────────────────────────────────────────
 // Derived on demand from the backend's session document list (source of

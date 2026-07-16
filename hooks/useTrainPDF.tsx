@@ -4,7 +4,7 @@ import ThemeContext from '@/contexts/ThemeContext';
 import { useRouter } from 'next/router';
 import { usePolling } from '@/hooks/usePolling';
 import { FileUploadStatus, SessionDocument } from '@/types/fileUploadStatus';
-import { getCurrentSessionId, getJobSessionId, notifyGraphIdsChanged } from '@/utils/sessionJobs';
+import { getCurrentSessionId, getJobSessionId, notifyGraphIdsChanged, SESSION_CHANGED_EVENT } from '@/utils/sessionJobs';
 import { toast } from 'react-toastify';
 
 /**
@@ -139,6 +139,19 @@ export const useTainPDF = () => {
     useEffect(() => {
         jobSessionIdRef.current = getJobSessionId();
         rehydrateSession();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        const onSessionChanged = () => {
+            jobSessionIdRef.current = getJobSessionId();
+            cancelledRef.current.clear();
+            setUploads([]);
+            setDocumentList([]);
+            setTrainingInProgress(false);
+        };
+        window.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
+        return () => window.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

@@ -12,7 +12,8 @@ import type { Socket } from 'socket.io-client';
 import ThemeContext from '@/contexts/ThemeContext';
 import { generateRandomString } from '@/utils/generateRandomeString';
 import { getDocumentNameAndPageNumber } from '@/utils/extractDocumentNameAndPage';
-import { GRAPH_IDS_CHANGED_EVENT, SESSION_CHANGED_EVENT, getGraphIds, resetJobSessionId, setCurrentSessionId } from '@/utils/sessionJobs';
+import { GRAPH_IDS_CHANGED_EVENT, SESSION_CHANGED_EVENT } from '@/utils/sessionJobs';
+import { getCurrentSessionId, getGraphIds, setCurrentSessionId, resetJobSessionId } from '@/utils/sessionJobs';
 import { listPublicNamespaces, listPublicNamespaceDocuments } from '@/apiRequests/ttt';
 import { NamespaceMode, PublicDocument, NamespaceState } from '@/types/namespace';
 // TODO(demo-seed): temporary frontend demo docs; remove once demo-library is seeded on the backend
@@ -477,6 +478,7 @@ export const useChatbot = () => {
                 const graphIds = resolveGraphIds()
                 let access_token = localStorage.getItem('access_token');
                 const conversation_id = localStorage.getItem('conversation_id')
+                const currentSessionId = getCurrentSessionId()
                 const response = await fetch(
                     `/api/chat?chatBotId=${newChatRoom}`,
                     {
@@ -490,7 +492,7 @@ export const useChatbot = () => {
                             question,
                             graphIds,
                             history,
-                            session: currentSession,
+                            session: currentSessionId,
                             reqQuery: router.query,
                             edit: update,
                         })

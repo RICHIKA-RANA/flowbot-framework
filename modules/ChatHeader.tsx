@@ -6,6 +6,8 @@ import LogoutIcon from '@/assets/svgs/LogoutIcon';
 import ShareIcon from '@/assets/svgs/ShareIcon';
 import { useChatbot } from '@/hooks/useChatbot';
 import { ToastContainer, toast } from 'react-toastify';
+import { getPublicChatLink } from '@/apiRequests';
+import { getCurrentSessionId } from '@/utils/sessionJobs';
 
 interface ChatHeaderProps {
     drawerOpen?: boolean;
@@ -24,8 +26,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
     const { handleLogout } = useChatbot();
 
     const handleShareChat = async () => {
-        // TODO: add api call here to get the public url for the chat;
-        toast.success("Public link copied to your clipboard")
+        const sessionId = getCurrentSessionId()
+        const userEmail = user.email || ''
+        const response = await getPublicChatLink(userEmail, sessionId)
+        if (response?.status == 200) {
+            // TODO: copy the shareable link to clipboard, before showing toast;
+            
+            toast.success("Public link copied to your clipboard")
+        }
     }
 
     useEffect(() => {

@@ -235,3 +235,25 @@ export const deleteHistorySession = async (
         return { ok: false, status }
     }
 }
+
+export const getPublicChatLink = async (email: string, sessionId: string) => {
+    try {
+        const response = await axios.post(`/api/chat/public`, {
+            email, sessionId
+        });
+        return response;
+    } catch (error) {
+        return null
+    }
+}
+
+export const getPublicChatData = async (publicChatId: string) => {
+    try {
+        const response = await axios.get(`/api/chat/public`, {
+            params: { publicChatId }
+        });
+        return response;
+    } catch (error) {
+        return null
+    }
+}

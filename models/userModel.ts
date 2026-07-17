@@ -69,6 +69,13 @@ export const upsertUserByEmail = async (
         { new: true, upsert: true }
     );
     return result as IUser;
+}
+
+export const findUserByEmail = async (
+    email: string
+): Promise<IUser> => {
+    const result = await UserModel.findOne({ email });
+    return result as IUser;
 };
 
 export const getUserIdByEmail = async (

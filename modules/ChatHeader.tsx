@@ -8,6 +8,7 @@ import { useChatbot } from '@/hooks/useChatbot';
 import { ToastContainer, toast } from 'react-toastify';
 import { getPublicChatLink } from '@/apiRequests';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
+import config from '@/config/constants';
 
 interface ChatHeaderProps {
     drawerOpen?: boolean;
@@ -25,13 +26,32 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
     }>({});
     const { handleLogout } = useChatbot();
 
+    const copyToClipboard = async (text: string) => {
+        if (navigator.clipboard) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+        
+        // to support older browsers, where the clipboard api might not be available;
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+        return;
+    };
+
     const handleShareChat = async () => {
         const sessionId = getCurrentSessionId()
         const userEmail = user.email || ''
         const response = await getPublicChatLink(userEmail, sessionId)
         if (response?.status == 200) {
-            // TODO: copy the shareable link to clipboard, before showing toast;
-            
+            const publicChatId = response.data._id;
+            const publiclyShareableURL = `${config.HOST}/share/${publicChatId}`
+            await copyToClipboard(publiclyShareableURL)
             toast.success("Public link copied to your clipboard")
         }
     }

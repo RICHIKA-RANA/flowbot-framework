@@ -1,5 +1,5 @@
 const config = {
-    HOST: process.env.HOST || 'app.localhost',
+    HOST: process.env.NEXT_PUBLIC_CHAT_HOST || 'app.localhost',
     SCHEME: process.env.SCHEME || 'http',
     MONGODB_URI: process.env.MONGODB_URI || '',
     MONGO_PSSWD: process.env.MONGO_PSSWD || '',

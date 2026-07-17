@@ -9,22 +9,27 @@ import { ToastContainer, toast } from 'react-toastify';
 import { getPublicChatLink } from '@/apiRequests';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
 import config from '@/config/constants';
+import { ChatHeaderProps } from '@/types/chat';
 
-interface ChatHeaderProps {
-    drawerOpen?: boolean;
-    onDrawerToggle?: () => void;
-}
-
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [canShareChat, setCanShareChat] = useState(false);
     const [user, setUser] = useState<{
         name?: string;
         email?: string;
     }>({});
     const { handleLogout } = useChatbot();
+
+    // if messages contain at-least one message from user and bot;
+    useEffect(() => {
+        const hasUserMessage = messages?.some((msg) => msg.type === "userMessage") || false;
+        const hasBotMessage = messages?.some((msg) => msg.type === "apiMessage") || false;
+    
+        setCanShareChat(hasUserMessage && hasBotMessage);
+    }, [messages, messages?.length]);
 
     const copyToClipboard = async (text: string) => {
         if (navigator.clipboard) {
@@ -116,9 +121,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
             <div className={styles?.['header-right']}>
                 <ToastContainer />
-                <div onClick={handleShareChat}>
-                    <ShareIcon />
-                </div>
+                {canShareChat && (
+                    <div onClick={handleShareChat}>
+                        <ShareIcon />
+                    </div>
+                )}
                 <button
                     className={styles?.['header-toggle-btn']}
                     onClick={onDrawerToggle}

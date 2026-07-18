@@ -1,60 +1,47 @@
 #!/usr/bin/env python3
 """
-Script to extract Future Work Item information from a pull request description/body
+Script to extract Future Work Item information from pull request reviews and review comments 
 and send to Jira Automation webhook.
 """
 
 import re
 import os
 import sys
-import hashlib
 from typing import Optional, Dict, Any
 
 LABEL_PREFIX = "fwi-sent:"
 
-def extract_future_work_item_from_pr(pr_body: str) -> Optional[Dict[str, str]]:
+def extract_future_work_item(text: str) -> Optional[Dict[str, str]]:
     """
-    Extract Future Work Item information from PR description/body text.
-    
-    Expected format in PR description(must be the final section of the PR):
-    /FWI
-    Title: <title>
-    Description: <description>
-    Reason: <reason>
-    
+    Extract Future Work Item information from a review or review comment.
+    Expected format:
+    FWI: <title>
+
     Args:
-        pr_body: Pull request description/body text
-        
+        text: Review or comment body.
+
     Returns:
-        Dictionary with 'title', 'description', 'reason' keys if found,
-        None otherwise
+        Dictionary containing the title if found, otherwise None.
     """
-    if not pr_body:
+    if not text:
         return None
-        
+
     regex = re.compile(
-        r'/FWI\s*[\r\n]+Title:\s*(.+?)\s*[\r\n]+Description:\s*([\s\S]*?)\s*[\r\n]+Reason:\s*([\s\S]*)',
+        r'FWI:\s*(.+)',
         re.IGNORECASE
     )
-    
-    match = regex.search(pr_body)
+
+    match = regex.search(text)
     if not match:
         return None
-    
+
     title = match.group(1).strip()
     if not title:
         return None
-    
-    return {
-        'title': title,
-        'description': match.group(2).strip(),
-        'reason': match.group(3).strip()
-    }
 
-def label_for_title(title: str) -> str:
-    """Build a stable label from a hash of the title"""
-    title_hash = hashlib.sha256(title.encode("utf-8")).hexdigest()[:12]
-    return f"{LABEL_PREFIX}{title_hash}"
+    return {
+        "title": title
+    }
 
 
 def get_pr_labels(repo: str, pr_number: int, token: str) -> list:
@@ -88,7 +75,7 @@ def send_to_jira(payload: Dict[str, Any], webhook_url: str, token: str) -> bool:
     try:
         import requests
     except ImportError:
-        print("⚠️  Warning: requests library not installed. Run: pip install requests", file=sys.stderr)
+        print("Warning: requests library not installed. Run: pip install requests", file=sys.stderr)
         return False
     
     headers = {
@@ -101,36 +88,47 @@ def send_to_jira(payload: Dict[str, Any], webhook_url: str, token: str) -> bool:
         response.raise_for_status()
         return True
     except requests.RequestException as e:
-        print(f"❌ Error sending to Jira: {e}", file=sys.stderr)
+        print(f"Error sending to Jira: {e}", file=sys.stderr)
         return False
 
 
 def main():
     """Main entry point for the script."""
     
-    pr_body = os.environ.get('PR_BODY', '')
-    if not pr_body:
-        print("ℹ️  No PR body found, skipping FWI extraction", file=sys.stderr)
-        sys.exit(0)  # not an error, just nothing to process
-    
-    fwi_data = extract_future_work_item_from_pr(pr_body)
-    if not fwi_data:
-        print("ℹ️  No Future Work Item found in PR description - continuing...", file=sys.stderr)
+    event_name = os.environ.get("EVENT_NAME", "")
+    if event_name == "pull_request_review":
+        review_text = os.environ.get("REVIEW_BODY", "")
+        fwi_id = os.environ.get("REVIEW_ID")
+    elif event_name == "pull_request_review_comment":
+        review_text = os.environ.get("COMMENT_BODY", "")
+        fwi_id = os.environ.get("COMMENT_ID")
+    else:
+        print(f"Unsupported event '{event_name}', skipping.", file=sys.stderr)
         sys.exit(0)
-    
+
+    if not review_text:
+        print("No review/comment body found, skipping FWI extraction.", file=sys.stderr)
+        sys.exit(0)
+
+    fwi_data = extract_future_work_item(review_text)
+
+    if not fwi_data:
+        print("No Future Work Item found in review/comment.", file=sys.stderr)
+        sys.exit(0)
+
     repo = os.environ.get('GITHUB_REPOSITORY', '')
     pr_number = int(os.environ.get('PR_NUMBER', 0))
     gh_token = os.environ.get('GITHUB_TOKEN')
-    new_label = label_for_title(fwi_data['title'])
+    new_label = f"{LABEL_PREFIX}{fwi_id}"
 
     if repo and pr_number and gh_token:
         try:
             existing_labels = get_pr_labels(repo, pr_number, gh_token)
             if new_label in existing_labels:
-                print(f"ℹ️  FWI '{fwi_data['title']}' already sent - skipping duplicate.", file=sys.stderr)
+                print(f"FWI '{fwi_data['title']}' already sent - skipping duplicate.", file=sys.stderr)
                 sys.exit(0)
         except Exception as e:
-            print(f"⚠️  Could not check existing labels: {e}", file=sys.stderr)
+            print(f"Could not check existing labels: {e}", file=sys.stderr)
 
     
     # configuration from environment
@@ -138,14 +136,12 @@ def main():
     token = os.environ.get('JIRA_AUTOMATION_TOKEN')
     
     if not webhook_url or not token:
-        print("⚠️  Warning: JIRA_AUTOMATION_WEBHOOK and JIRA_AUTOMATION_TOKEN not configured", file=sys.stderr)
+        print("Warning: JIRA_AUTOMATION_WEBHOOK and JIRA_AUTOMATION_TOKEN not configured", file=sys.stderr)
         sys.exit(0)
     
     # payload with PR metadata
     payload = {
         'title': fwi_data['title'],
-        'description': fwi_data['description'],
-        'reason': fwi_data['reason'],
         'repository': repo or 'unknown',
         'author': os.environ.get('GITHUB_ACTOR', 'unknown'),
         'pr_url': os.environ.get('PR_URL', ''),
@@ -160,10 +156,10 @@ def main():
             try:
                 add_label(repo, pr_number, gh_token, new_label)
             except Exception as e:
-                print(f"⚠️  Sent to Jira but failed to add tracking label: {e}", file=sys.stderr)
+                print(f"Sent to Jira but failed to add tracking label: {e}", file=sys.stderr)
         sys.exit(0)
     else:
-        print("⚠️  Failed to send Future Work Item to Jira - continuing anyway", file=sys.stderr)
+        print("Failed to send Future Work Item to Jira - continuing anyway", file=sys.stderr)
         sys.exit(0)
 
 

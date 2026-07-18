@@ -1,12 +1,11 @@
 name: Create Future Work Item
 
 on:
-  pull_request:
-    types:
-      - opened
-      - edited
-      - reopened
-      - ready_for_review
+  pull_request_review:
+    types: [submitted]
+
+  pull_request_review_comment:
+    types: [created]
 
 permissions:
   pull-requests: write
@@ -29,12 +28,18 @@ jobs:
         run: |
           pip install requests
           
-      - name: Extract and send Future Work Item from PR description
+      - name: Extract and send Future Work Item
         env:
           # ===== DYNAMIC VARIABLES (Auto-populated per PR) =====
           # These come from the GitHub event and change with each PR
           PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
+
+          EVENT_NAME: ${{ github.event_name }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          REVIEW_ID: ${{ github.event.review.id }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           

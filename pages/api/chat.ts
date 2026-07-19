@@ -3,7 +3,7 @@ import { makeChain } from '@/utils/makechain';
 import dbConnect from '@/config/mongodb';
 import { upsertSubscription } from '@/models/subscriptionModel';
 import { IUser, upsertUserByEmail } from '@/models/userModel';
-import { upsertUserHistory, pushChatEntry } from '@/models/userHistoryModel';
+import { ITokenUsage, upsertUserHistory, pushChatEntry } from '@/models/userHistoryModel';
 import axios from 'axios';
 import { BigQuery } from '@google-cloud/bigquery';
 import { DocumentProcessorServiceClient } from '@google-cloud/documentai';
@@ -61,7 +61,8 @@ async function saveChatHistory(
     user: IUser | null,
     question: string,
     answer: string,
-    graphIds: string[]
+    graphIds: string[],
+    tokens: ITokenUsage
 ): Promise<void> {
     try {
         const email  = user?.email  || null;
@@ -72,6 +73,7 @@ async function saveChatHistory(
             question,
             answer,
             graphIds: graphIds.filter(Boolean), // drop empty strings
+            tokens,
         });
     } catch (err) {
         console.error('saveChatHistory failed (non-fatal):', err);
@@ -168,7 +170,8 @@ export default async function handler(
                     user,
                     sanitizedQuestion,
                     response.text,
-                    graphIds || []
+                    graphIds || [],
+                    response.tokens
                 );
             }
 
@@ -220,7 +223,8 @@ export default async function handler(
                 user,
                 sanitizedQuestion,
                 response.text,
-                graphIds || []
+                graphIds || [],
+                response.tokens
             );
         }
 

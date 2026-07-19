@@ -12,7 +12,7 @@ import type { Socket } from 'socket.io-client';
 import ThemeContext from '@/contexts/ThemeContext';
 import { generateRandomString } from '@/utils/generateRandomeString';
 import { getDocumentNameAndPageNumber } from '@/utils/extractDocumentNameAndPage';
-import { getGraphIds, GRAPH_IDS_CHANGED_EVENT, setCurrentSessionId } from '@/utils/sessionJobs';
+import { GRAPH_IDS_CHANGED_EVENT, SESSION_CHANGED_EVENT, getGraphIds, resetJobSessionId, setCurrentSessionId } from '@/utils/sessionJobs';
 import { listPublicNamespaces, listPublicNamespaceDocuments } from '@/apiRequests/ttt';
 import { NamespaceMode, PublicDocument, NamespaceState } from '@/types/namespace';
 // TODO(demo-seed): temporary frontend demo docs; remove once demo-library is seeded on the backend
@@ -73,10 +73,14 @@ export const useChatbot = () => {
     useEffect(() => {
         const bump = () => setGraphIdsVersion((v) => v + 1);
         window.addEventListener(GRAPH_IDS_CHANGED_EVENT, bump);
-        window.addEventListener('focus', bump);
+        const onSessionChanged = () => {
+            setCachedGraphIds([]);
+            setHasPrivateDocs(false);
+        };
+        window.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
         return () => {
             window.removeEventListener(GRAPH_IDS_CHANGED_EVENT, bump);
-            window.removeEventListener('focus', bump);
+            window.removeEventListener(SESSION_CHANGED_EVENT, onSessionChanged);
         };
     }, []);
 
@@ -95,7 +99,8 @@ export const useChatbot = () => {
     const namespaceMode: NamespaceMode = hasPrivateDocs ? 'private' : 'public';
 
     useEffect(() => {
-        if (hasPrivateDocs) return;
+        if (hasPrivateDocs) return;          // a private-doc session exists → public not needed
+        if (publicDocs.length > 0) return;   // demo docs are static → fetch once, then reuse
         let cancelled = false;
         (async () => {
             // Discover the public (demo) namespace, then load its documents.
@@ -110,7 +115,7 @@ export const useChatbot = () => {
             setActiveDocId((prev) => prev ?? docs[0]?.id ?? null);
         })();
         return () => { cancelled = true; };
-    }, [hasPrivateDocs, graphIdsVersion]);
+    }, [hasPrivateDocs, publicDocs.length]);
 
     const activeDoc = publicDocs.find((d) => d.id === activeDocId) || null;
     const resolveGraphIds = (): string[] =>
@@ -139,6 +144,7 @@ export const useChatbot = () => {
 
     // Poll session status: fires on mount, on tab focus, and every 5 min while tab is visible.
     useEffect(() => {
+        if (!router.isReady) return;
         let initialised = false;
         const checkSession = () => {
             if (document.visibilityState !== 'visible') return;
@@ -160,14 +166,16 @@ export const useChatbot = () => {
                 });
         };
 
-        checkSession();
+        if (!openidCode) {
+            checkSession();
+        }
         const id = setInterval(checkSession, 5 * 60 * 1000);
         document.addEventListener('visibilitychange', checkSession);
         return () => {
             clearInterval(id);
             document.removeEventListener('visibilitychange', checkSession);
         };
-    }, []);
+    }, [router.isReady, openidCode]);
 
     // Check if OpenID is configured
     const hasOpenID = JSModule?.openid?.authorization_endpoint && JSModule?.openid?.client_id;
@@ -194,7 +202,6 @@ export const useChatbot = () => {
         if (JSModule?.handleHeaderPane) {
             JSModule.handleHeaderPane('logout');
         }
-        window.location.reload();
     };
     const { messages, history } = messageState;
     // Effect for initializing chat and socket
@@ -349,9 +356,14 @@ export const useChatbot = () => {
     useEffect(() => {
         const controller = new AbortController();
 
+        const fail = (message: string) => {
+            setAuthError(message);
+            setIsCheckingSession(false);
+        };
+
         const fetchToken = async () => {
             if (oauthError) {
-                setAuthError('Authentication was cancelled or interrupted. No account was created.');
+                fail('Authentication was cancelled or interrupted. No account was created.');
                 return;
             }
 
@@ -359,7 +371,7 @@ export const useChatbot = () => {
                 const returnedState = router.query.state;
                 const savedState = sessionStorage.getItem('oauth_state');
                 if (!returnedState || returnedState !== savedState) {
-                    setAuthError('Authentication failed due to a security check. Please try again.');
+                    fail('Authentication failed due to a security check. Please try again.');
                     return;
                 }
                 sessionStorage.removeItem('oauth_state');
@@ -379,13 +391,15 @@ export const useChatbot = () => {
                     });
 
                     if (response.ok) {
-                        window.location.href = `/?chat-id=${chatId}`;
+                        setIsLoggedIn(true);
+                        setIsCheckingSession(false);
+                        router.replace(`/?chat-id=${chatId}`, undefined, { shallow: true });
                     } else {
-                        setAuthError('We couldn\'t sign you in. Please try again.');
+                        fail('We couldn\'t sign you in. Please try again.');
                     }
                 } catch (err) {
                     if ((err as Error).name === 'AbortError') return;
-                    setAuthError('Something went wrong while trying to sign in. Please try again.');
+                    fail('Something went wrong while trying to sign in. Please try again.');
                 }
             }
         };
@@ -790,6 +804,18 @@ export const useChatbot = () => {
         }
     };
 
+    const startNewChat = () => {
+        const newSessionId = generateRandomString('session_', 9);
+        setCurrentSession(newSessionId);
+        setCurrentSessionId(newSessionId);
+        resetJobSessionId();
+        setMessageState({ messages: [], history: [] });
+        setReferences([]);
+        setQuery('');
+        if (typeof window !== 'undefined') localStorage.removeItem('conversation_id');
+        setRoomId('');
+    };
+
     return {
         chatId,
         messages,
@@ -818,5 +844,7 @@ export const useChatbot = () => {
         authError,
         setAuthError,
         namespace,
+        currentSession,
+        startNewChat,
     };
 };

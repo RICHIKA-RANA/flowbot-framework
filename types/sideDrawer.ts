@@ -8,6 +8,7 @@ export interface SideDrawerProps {
     switchTab: (tabName: string, graphId?: string) => Promise<void>;
     namespace?: NamespaceState;
     handleSuggestedQueries: (val: string[]) => void;
+    hideDemoDocs?: boolean;
 }
 
 export interface DemoDocsSectionProps {

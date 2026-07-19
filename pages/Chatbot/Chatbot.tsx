@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useChatbot } from '@/hooks/useChatbot';
 import { ChatHeader } from '@/modules/ChatHeader';
 import { SidePanel } from '@/modules/SideDrawer';
@@ -10,6 +10,8 @@ import DocumentTree from '@/modules/DocumentTree';
 import { getDocumentTreeJSon } from '@/apiRequests/ttt';
 import { DocumentTreeData } from '@/types/documentTree';
 import SuggestedQueries from '@/modules/SuggestedQueries';
+import HistorySidebar from '@/modules/HistorySidebar';
+import PastConversation from '@/modules/PastConversation';
 
 const Chatbot: React.FC = () => {
   const {
@@ -35,9 +37,31 @@ const Chatbot: React.FC = () => {
     authError,
     setAuthError,
     namespace,
+    startNewChat,
+    currentSession,
   } = useChatbot();
 
-  // Left panel state for toggle
+  const showHistory = !!JSModule?.showHistory;
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [historyReloadToken, setHistoryReloadToken] = useState(0);
+  const [hasPriorSessions, setHasPriorSessions] = useState(false);
+  const handleSessionsCount = useCallback((n: number) => setHasPriorSessions(n > 0), []);
+
+  const handleSelectSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId === currentSession ? null : sessionId);
+  };
+
+  const handleNewChat = () => {
+    setSelectedSessionId(null);
+    startNewChat();
+    setHistoryReloadToken((t) => t + 1);
+  };
+
+  useEffect(() => {
+    if (!showHistory || selectedSessionId) return;
+    if (messages.length > 0) setHistoryReloadToken((t) => t + 1);
+  }, [messages.length, showHistory, selectedSessionId]);
+
   const [leftPanelExpanded, setLeftPanelExpanded] = useState(true);
   const [showSuggestedQueries, setShowSuggestedQueries] = useState(true);
   const [suggestedQueries, setSuggestedQueries] = useState<string[]>([]);
@@ -46,7 +70,7 @@ const Chatbot: React.FC = () => {
   const [documentTreeJSon, setDocumentTreeJSon] = useState<DocumentTreeData | null>(null);
 
   const handleSuggestedQueries = (queries: string[]) => {
-    if (queries?.length > 0) {
+    if (queries?.length  > 0) {
       setShowSuggestedQueries(true)
       setSuggestedQueries(queries)
     } else {
@@ -96,7 +120,7 @@ const Chatbot: React.FC = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <div style={{ width: '150px', height: '150px' }}>
-          <Loader loader="https://lottie.host/d1fd738a-f930-465e-b6ff-cf2412f791db/8r36ZWTWb2.json" />
+          <Loader />
         </div>
       </div>
     );
@@ -116,7 +140,7 @@ const Chatbot: React.FC = () => {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
         <div style={{ width: '150px', height: '150px' }}>
-          <Loader loader="https://lottie.host/d1fd738a-f930-465e-b6ff-cf2412f791db/8r36ZWTWb2.json" />
+          <Loader />
         </div>
       </div>
     )
@@ -139,13 +163,20 @@ const Chatbot: React.FC = () => {
           display: 'flex',
           overflow: 'hidden',
         }}>
-          {/* Left panel from bot config */}
-          {JSModule?.leftPanelHtml && leftPanelExpanded && (
+          {showHistory ? (
+            <HistorySidebar
+              selectedSessionId={selectedSessionId ?? currentSession}
+              onSelectSession={handleSelectSession}
+              onNewChat={handleNewChat}
+              reloadToken={historyReloadToken}
+              onCountChange={handleSessionsCount}
+            />
+          ) : leftPanelExpanded && JSModule?.leftPanelHtml ? (
             <div
               className={styles?.['sidebar']}
               dangerouslySetInnerHTML={{ __html: JSModule.leftPanelHtml }}
             />
-          )}
+          ) : null}
 
           {/* Main Content Area */}
           <div style={{
@@ -164,7 +195,11 @@ const Chatbot: React.FC = () => {
             }}>
 
               {
-                activeTabName === 'documentTree' ? (
+                selectedSessionId ? (
+                  <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
+                    <PastConversation sessionId={selectedSessionId} />
+                  </div>
+                ) : activeTabName === 'documentTree' ? (
                   <div
                     style={{
                       flex: 1,
@@ -196,7 +231,7 @@ const Chatbot: React.FC = () => {
                       documentTreeLoading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
                           <div style={{ width: '150px', height: '150px' }}>
-                            <Loader loader="https://lottie.host/d1fd738a-f930-465e-b6ff-cf2412f791db/8r36ZWTWb2.json" />
+                            <Loader />
                           </div>
                         </div>
                       ) : (                
@@ -243,7 +278,7 @@ const Chatbot: React.FC = () => {
                       />
                     </div>
                     {
-                      showSuggestedQueries && messages?.length == 0 && query === "" && (
+                      showSuggestedQueries && !hasPriorSessions && messages?.length == 0 && query === "" && (
                         <SuggestedQueries setQuery={setQuery} suggestedQuestions={suggestedQueries} />
                       )
                     }
@@ -259,10 +294,8 @@ const Chatbot: React.FC = () => {
                   </div>
                 )
               }
-
-              {/* Right Documents Panel */}
-              {JSModule?.drawerEnabled && (
-                <SidePanel switchTab={switchTab} open={open} setOpen={setOpen} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} />
+              {JSModule?.drawerEnabled && !selectedSessionId && (
+                <SidePanel switchTab={switchTab} open={open} setOpen={setOpen} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} hideDemoDocs={hasPriorSessions} />
               )}
             </div>
           </div>

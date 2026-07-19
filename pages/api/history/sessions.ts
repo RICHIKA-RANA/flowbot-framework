@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         try {
             const record = await UserHistoryModel
                 .findOne({ sessionId, email })  // email scope prevents cross-user reads
-                .lean<IUserHistory>();
+                .lean<IUserHistory | null>();
 
             if (!record) {
                 return res.status(404).json({ error: 'Session not found' });

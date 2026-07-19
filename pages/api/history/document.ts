@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/config/mongodb';
 import { upsertUserHistory, pushDocumentEntry } from '@/models/userHistoryModel';
-import UserModel from '@/models/userModel';
+import { getUserIdByEmail } from '@/models/userModel';
 import { getVerifiedEmail } from '@/utils/auth';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -20,8 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         await dbConnect();
 
-        const user: any= await UserModel.findOne({ email }).select('_id').lean();
-        const userId = user?._id || null;
+        const userId = await getUserIdByEmail(email);
 
         await upsertUserHistory(sessionId, chatbotId || '', email, userId);
         await pushDocumentEntry(sessionId, { name, size: size || 0, type: type || '', jobId: jobId || '', graphId });

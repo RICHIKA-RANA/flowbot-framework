@@ -4,6 +4,7 @@ const SESSION_ID_KEY = 'currentSessionId';
 const JOB_SESSION_KEY = 'jobSessionId';
 
 export const GRAPH_IDS_CHANGED_EVENT = 'graphids-changed';
+export const SESSION_CHANGED_EVENT = 'session-changed';
 
 export const notifyGraphIdsChanged = () => {
     if (typeof window === 'undefined') return;
@@ -36,6 +37,13 @@ export const getJobSessionId = (): string => {
         sessionStorage.setItem(JOB_SESSION_KEY, jobSessionId);
     }
     return jobSessionId;
+};
+
+export const resetJobSessionId = (): void => {
+    if (typeof window === 'undefined') return;
+    const jobSessionId = crypto.randomUUID();
+    sessionStorage.setItem(JOB_SESSION_KEY, jobSessionId);
+    window.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
 };
 
 // ─── Graph IDs ────────────────────────────────────────────────────────────

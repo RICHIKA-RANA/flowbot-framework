@@ -51,13 +51,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
     const handleShareChat = async () => {
         const sessionId = getCurrentSessionId()
-        const userEmail = user.email || ''
-        const response = await getPublicChatLink(userEmail, sessionId)
+        const response = await getPublicChatLink(sessionId)
         if (response?.status == 200) {
             const publicChatId = response.data._id;
             const publiclyShareableURL = `${config.HOST}/share/${publicChatId}`
             await copyToClipboard(publiclyShareableURL)
             toast.success("Public link copied to your clipboard")
+        } else {
+            toast.error("Unable to share chat. Please try again in a moment.")
         }
     }
 

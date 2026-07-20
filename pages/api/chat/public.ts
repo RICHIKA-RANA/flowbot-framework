@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createPublicChat, getPublicChatById } from '@/models/publicChat';
 import { getHistoryDocumentBySessionId } from '@/models/userHistoryModel';
+import { getVerifiedEmail } from '@/utils/auth';
 
 export default async function handler(
   req: NextApiRequest,
@@ -9,7 +10,8 @@ export default async function handler(
   try {
     // generate a public chat url
     if (req.method === 'POST') {
-      const { email, sessionId } = req.body;
+      const { sessionId } = req.body;
+      const email = getVerifiedEmail(req)
       const response = await createPublicChat(String(sessionId), String(email));
       return res.status(200).json(response);
 

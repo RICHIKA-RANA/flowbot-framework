@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { findUserByEmail } from './userModel';
+import { getUserIdByEmail } from './userModel';
 
 
 export interface IPublicChat extends Document {
@@ -40,8 +40,7 @@ export const createPublicChat = async (
     sessionId: string,
     email: string
 ): Promise<IPublicChat> => {
-    const userData = await findUserByEmail(email)
-    const userId = userData._id;
+    const userId = await getUserIdByEmail(email)
     return (await PublicChatModel.create({
         sessionId,
         userId,

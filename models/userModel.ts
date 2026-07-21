@@ -71,13 +71,6 @@ export const upsertUserByEmail = async (
     return result as IUser;
 }
 
-export const findUserByEmail = async (
-    email: string
-): Promise<IUser> => {
-    const result = await UserModel.findOne({ email });
-    return result as IUser;
-};
-
 export const getUserIdByEmail = async (
     email: string
 ): Promise<mongoose.Types.ObjectId | null> => {

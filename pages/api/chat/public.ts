@@ -11,7 +11,7 @@ export default async function handler(
     // generate a public chat url
     if (req.method === 'POST') {
       const { sessionId } = req.body;
-      const email = getVerifiedEmail(req)
+      const email = getVerifiedEmail(req);
       const response = await createPublicChat(String(sessionId), String(email));
       return res.status(200).json(response);
 
@@ -37,12 +37,17 @@ export default async function handler(
         publicChatId,
         sessionId: publicChat.sessionId,
         sharedAt: publicChat.publishedAt,
-        documents: userHistoryDoc.documents.filter(
-          (doc) => doc.uploadedAt <= publicChat.publishedAt,
-        ),
-        chats: userHistoryDoc.chats.filter(
-          (chat) => chat.askedAt <= publicChat.publishedAt,
-        ),
+        // TODO: uncomment the following lines once we are showing the documents in public chat;
+        // documents: userHistoryDoc.documents.filter(
+        //   (doc) => doc.uploadedAt <= publicChat.publishedAt,
+        // ),
+        chats: userHistoryDoc.chats
+          .filter((chat) => chat.askedAt <= publicChat.publishedAt)
+          .map(({ question, answer, askedAt }) => ({
+            question,
+            answer,
+            askedAt,
+          })),
       };
 
       return res.status(200).json(response);

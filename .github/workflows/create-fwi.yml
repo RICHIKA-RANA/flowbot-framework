@@ -1,0 +1,61 @@
+name: Create Future Work Item
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  create-fwi:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install requests
+          
+      - name: Extract and send Future Work Item
+        env:
+          # ===== DYNAMIC VARIABLES (Auto-populated per PR) =====
+          # These come from the GitHub event and change with each PR
+          PR_TITLE: ${{ github.event.pull_request.title }}
+
+          EVENT_NAME: ${{ github.event_name }}
+          REVIEW_BODY: ${{ github.event.review.body }}
+          REVIEW_ID: ${{ github.event.review.id }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          COMMENT_ID: ${{ github.event.comment.id }}
+          
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+          # ===== STATIC SECRETS (Store once in GitHub Settings) =====
+          # These must be configured in: Settings → Secrets and variables → Actions
+          JIRA_AUTOMATION_WEBHOOK: ${{ secrets.JIRA_AUTOMATION_WEBHOOK }}
+          JIRA_AUTOMATION_TOKEN: ${{ secrets.JIRA_AUTOMATION_TOKEN }}
+          
+        run: |
+          # Execute the Python script - it will handle all cases gracefully
+          python .github/scripts/create-fwi.py
+          
+      - name: Log completion
+        if: always()
+        run: echo "✅ Future Work Item processing completed"

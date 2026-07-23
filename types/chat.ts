@@ -40,3 +40,9 @@ export interface SignInScreenProps {
   onLogin: () => void;
   error?: string | null;
 }
+
+export interface ChatHeaderProps {
+  drawerOpen?: boolean;
+  onDrawerToggle?: () => void;
+  messages?: Message[]
+}

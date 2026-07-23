@@ -165,4 +165,10 @@ export const pushDocumentEntry = async (
     );
 };
 
+export const getHistoryDocumentBySessionId = async (
+    sessionId: string
+): Promise<IUserHistory | null> => {
+    return await UserHistoryModel.findOne({ sessionId });
+};
+
 export default UserHistoryModel;

@@ -69,7 +69,7 @@ export const upsertUserByEmail = async (
         { new: true, upsert: true }
     );
     return result as IUser;
-};
+}
 
 export const getUserIdByEmail = async (
     email: string

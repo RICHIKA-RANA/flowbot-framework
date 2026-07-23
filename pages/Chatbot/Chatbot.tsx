@@ -157,6 +157,7 @@ const Chatbot: React.FC = () => {
         <ChatHeader
           drawerOpen={open}
           onDrawerToggle={() => setOpen(!open)}
+          messages={messages}
         />
         <div style={{
           flex: 1,

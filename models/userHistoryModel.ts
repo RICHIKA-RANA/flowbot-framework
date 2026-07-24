@@ -11,10 +11,17 @@ export interface IDocumentEntry {
     uploadedAt: Date;
 }
 
+export interface ITokenUsage {
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+}
+
 export interface IChatEntry {
     question: string;
     answer: string;
     graphIds: string[]; // which graphs were queried for this specific question
+    tokens: ITokenUsage;
     askedAt: Date;
 }
 
@@ -45,11 +52,21 @@ const DocumentEntrySchema = new Schema<IDocumentEntry>(
     { _id: false }   // no _id on subdocuments
 );
 
+const TokenUsageSchema = new Schema<ITokenUsage>(
+    {
+        input_tokens:  { type: Number, default: 0 },
+        output_tokens: { type: Number, default: 0 },
+        total_tokens:  { type: Number, default: 0 },
+    },
+    { _id: false }
+);
+
 const ChatEntrySchema = new Schema<IChatEntry>(
     {
         question: { type: String, required: true },
         answer:   { type: String, required: true },
         graphIds: { type: [String], default: [] },
+        tokens:   { type: TokenUsageSchema, default: () => ({}) },
         askedAt:  { type: Date, default: Date.now },
     },
     { _id: false }
@@ -115,7 +132,12 @@ export const upsertUserHistory = async (
  */
 export const pushChatEntry = async (
     sessionId: string,
-    entry: { question: string; answer: string; graphIds: string[] }
+    entry: {
+        question: string;
+        answer: string;
+        graphIds: string[];
+        tokens?: Partial<ITokenUsage>;
+    }
 ): Promise<void> => {
     await UserHistoryModel.findOneAndUpdate(
         { sessionId },
@@ -125,6 +147,11 @@ export const pushChatEntry = async (
                     question: entry.question,
                     answer:   entry.answer,
                     graphIds: entry.graphIds,
+                    tokens: {
+                        input_tokens:  entry.tokens?.input_tokens,
+                        output_tokens: entry.tokens?.output_tokens,
+                        total_tokens:  entry.tokens?.total_tokens,
+                    },
                     askedAt:  new Date(),
                 },
             },

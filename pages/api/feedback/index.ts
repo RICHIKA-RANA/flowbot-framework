@@ -31,8 +31,7 @@ export default async function handler(
                     category,
                     message,
                     sessionId,
-                    createdAt: new Date(),
-
+                    createdAt: new Date()
                 }
             )
 

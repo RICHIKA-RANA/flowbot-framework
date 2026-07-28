@@ -113,7 +113,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
     useEffect(() => {
         let cancelled = false;
         fetch("/api/auth/session")
-        fetch("/api/auth/session")
             .then((r) => r.json())
             .then((data: { name?: string; email?: string }) => {
                 if (cancelled) return;

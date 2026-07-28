@@ -77,7 +77,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
         const response = await submitFeedback(feedback);
         setFeedbackModalOpen(false);
-        if (response?.status == 200) {
+        if (response?.status === 201) {
             toast.success("Thanks for your feedback")
         } else {
             toast.error("Sorry, something went wrong in submitting feedback")

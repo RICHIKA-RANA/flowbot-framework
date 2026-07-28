@@ -2,6 +2,9 @@ export interface FeedbackPayload {
     rating: number;
     category: string;
     message: string;
+    sessionId: string;
+    email?: string;
+    createdAt?: Date
 };
 
 export interface FeedbackFormProps {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { FeedbackFormProps } from '@/types/feedback';
+import { getCurrentSessionId } from '@/utils/sessionJobs';
 
 const FeedbackForm = ({ onSubmit }: FeedbackFormProps) => {
     const [rating, setRating] = useState(0);
@@ -7,10 +8,12 @@ const FeedbackForm = ({ onSubmit }: FeedbackFormProps) => {
     const [message, setMessage] = useState("");
 
     const handleSubmit = () => {
+        const sessionId = getCurrentSessionId()
         onSubmit("submit", {
             rating,
             category,
             message,
+            sessionId
         });
     };
 

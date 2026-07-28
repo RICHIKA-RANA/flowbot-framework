@@ -1,4 +1,5 @@
 import { ChatbotsResponse, LiveChatbot } from "@/types/chat";
+import { FeedbackPayload } from "@/types/feedback";
 import { HistorySessionSummary, HistorySessionDetail } from "@/types/history";
 import { axiosPDFInstance, axiosConvInstance } from "@/utils/axiosInstance"
 import axios from 'axios';
@@ -252,6 +253,24 @@ export const getPublicChatData = async (publicChatId: string) => {
         const response = await axios.get(`/api/chat/public`, {
             params: { publicChatId }
         });
+        return response;
+    } catch (error) {
+        return null
+    }
+}
+
+export const submitFeedback = async (feedback: FeedbackPayload) => {
+    try {
+        const response = await axios.post(`/api/feedback`, feedback);
+        return response;
+    } catch (error) {
+        return null
+    }
+}
+
+export const getAllFeedbacks = async () => {
+    try {
+        const response = await axios.get(`/api/feedback`);
         return response;
     } catch (error) {
         return null

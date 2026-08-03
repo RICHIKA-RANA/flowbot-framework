@@ -5,19 +5,26 @@ import ChevronDownIcon from '@/assets/svgs/ChevronDownIcon';
 import LogoutIcon from '@/assets/svgs/LogoutIcon';
 import ShareIcon from '@/assets/svgs/ShareIcon';
 import { useChatbot } from '@/hooks/useChatbot';
-import { ToastContainer, toast } from 'react-toastify';
-import { getPublicChatLink } from '@/apiRequests';
+import { toast } from 'react-toastify';
+import { getPublicChatLink, submitFeedback } from '@/apiRequests';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
 import config from '@/config/constants';
 import { ChatHeaderProps } from '@/types/chat';
+import { Menu } from 'lucide-react';
+import CustomModal from '@/components/ui/customModal';
+import FeedbackForm from '@/components/FeedbackForm';
+import { FeedbackPayload } from '@/types/feedback';
 import ChatTabs from './ChatTabs';
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, sessions, setSessions, activeSessionId, onSelectSession, onNewChat, onCountChange }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [canShareChat, setCanShareChat] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
     const [user, setUser] = useState<{
         name?: string;
         email?: string;
@@ -29,6 +36,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
         const hasUserMessage = messages?.some((msg) => msg.type === "userMessage") || false;
         const hasBotMessage = messages?.some((msg) => msg.type === "apiMessage") || false;
 
+
         setCanShareChat(hasUserMessage && hasBotMessage);
     }, [messages, messages?.length]);
 
@@ -37,6 +45,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
             await navigator.clipboard.writeText(text);
             return;
         }
+
 
         // to support older browsers, where the clipboard api might not be available;
         const textarea = document.createElement("textarea");
@@ -63,13 +72,37 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
         }
     }
 
+    const handleFeedback = async (action?: string, feedback?: FeedbackPayload) => {
+        if (action === "close modal" || !feedback) {
+            setFeedbackModalOpen(false);
+            return;
+        }
+
+        const response = await submitFeedback(feedback);
+        if (response?.status === 201) {
+            // closing the modal only if the feedback is successfully submitted
+            // if  anything goes wrong, modal would stay as opened - user can chose to close or retry
+            setFeedbackModalOpen(false);
+            toast.success("Thanks for your feedback")
+        } else {
+            toast.error("Sorry, something went wrong in submitting feedback")
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
             if (
                 userMenuRef.current &&
-                !userMenuRef.current.contains(event.target as Node)
+                !userMenuRef.current.contains(target)
             ) {
                 setIsUserMenuOpen(false);
+            }
+            if (
+                menuRef.current &&
+                !menuRef.current.contains(target)
+            ) {
+                setShowMenu(false);
             }
         };
 
@@ -110,73 +143,115 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
     return (
         <div className="flex justify-between h-12 w-full items-center border border-b border-gray-200 bg-white px-4 py-2 gap-1">
-            <div className="flex flex-1 min-w-0 items-center gap-4 overflow-hidden">
-                <button
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
-                    title="Toggle Sidebar"
-                >
-                    <PanelIcon size={20} stroke={"#6b7280"} />
-                </button>
-
-                <span className="flex-shrink-0 text-base font-semibold text-gray-900">
-                    {JSModule.botName || "AI Document Chat"}
-                </span>
-                <ChatTabs 
-                    messages={messages}
-                    sessions={sessions} 
-                    setSessions={setSessions} 
-                    activeSessionId={activeSessionId} 
-                    onSelectSession={onSelectSession} 
-                    onNewChat={onNewChat} 
-                />
-            </div>
-
-            <div className="flex items-center gap-4">
-                <ToastContainer />
-                {canShareChat && (
-                    <div onClick={handleShareChat} className="cursor-pointer">
-                        <ShareIcon />
-                    </div>
-                )}
-                <button
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
-                    onClick={onDrawerToggle}
-                    title="Toggle Documents"
-                >
-                    <PanelIcon size={20} stroke={drawerOpen ? "#2563eb" : "#6b7280"} />
-                </button>
-
-                <div className="relative" ref={userMenuRef}>
-                    <div
-                        className="flex cursor-pointer select-none items-center gap-2 rounded-full border border-gray-200 bg-black px-2 py-1 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 overflow-visible"
-                        onClick={() => setIsUserMenuOpen((prev) => !prev)}
+            {
+                feedbackModalOpen && (
+                    <CustomModal
+                        id={"feedback"}
+                        title={"Feedback"}
+                        onClose={handleFeedback}
+                        status={feedbackModalOpen}
+                        showOptionsButton={false}
                     >
-                        <div className="h-8 w-8 flex justify-center items-center text-center rounded-full text-sm font-semibold text-black border border-black bg-slate-700">
-                            {user?.name?.charAt(0).toUpperCase() || "U"}
-                        </div>
+                        <FeedbackForm
+                            onSubmit={handleFeedback}
+                        />
+                    </CustomModal>
+                )
+            }
+            <div className="flex justify-between h-12 w-full items-center border border-b border-gray-200 bg-white px-4 py-2 gap-1">
+                <div className="flex flex-1 min-w-0 items-center gap-4 overflow-hidden">
+                    <button
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
+                        title="Toggle Sidebar"
+                    >
+                        <PanelIcon size={20} stroke={"#6b7280"} />
+                    </button>
 
-                        <div className="flex flex-col text-left leading-[1.2]">
-                            <span className="text-sm font-medium text-gray-700">
-                                {user.name || "User"}
-                            </span>
-                            <span className="text-xs font-normal text-gray-400">
-                                {user.email || ""}
-                            </span>
-                        </div>
-                        <ChevronDownIcon />
-                    </div>
+                    <span className="flex-shrink-0 text-base font-semibold text-gray-900">
+                        {JSModule.botName || "AI Document Chat"}
+                    </span>
+                    <ChatTabs
+                        messages={messages}
+                        sessions={sessions}
+                        setSessions={setSessions}
+                        activeSessionId={activeSessionId}
+                        onSelectSession={onSelectSession}
+                        onNewChat={onNewChat}
+                    />
+                </div>
 
-                    {isUserMenuOpen && (
-                        <div className="absolute right-0 top-14 z-[200] min-w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 ">
-                            <button
-                                className="flex w-full items-center gap-2 bg-transparent px-4 py-2.5 text-left text-sm text-red-500 transition-colors duration-150 hover:bg-gray-50"
-                                onClick={handleLogout}
-                            >
-                                <LogoutIcon />
-                                Sign out
-                            </button>
+                <div className="flex items-center gap-4">
+                    {canShareChat && (
+                        <div onClick={handleShareChat} className="cursor-pointer">
+                            <ShareIcon />
                         </div>
                     )}
+                    <button
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
+                        onClick={onDrawerToggle}
+                        title="Toggle Documents"
+                    >
+                        <PanelIcon size={20} stroke={drawerOpen ? "#2563eb" : "#6b7280"} />
+                    </button>
+
+                    <div className="relative" ref={userMenuRef}>
+                        <div
+                            className="flex cursor-pointer select-none items-center gap-2 rounded-full border border-gray-200 bg-black px-2 py-1 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 overflow-visible"
+                            onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                        >
+                            <div className="h-8 w-8 flex justify-center items-center text-center rounded-full text-sm font-semibold text-black border border-black bg-slate-700">
+                                {user?.name?.charAt(0).toUpperCase() || "U"}
+                            </div>
+
+                            <div className="flex flex-col text-left leading-[1.2]">
+                                <span className="text-sm font-medium text-gray-700">
+                                    {user.name || "User"}
+                                </span>
+                                <span className="text-xs font-normal text-gray-400">
+                                    {user.email || ""}
+                                </span>
+                            </div>
+                            <ChevronDownIcon />
+                        </div>
+
+                        {isUserMenuOpen && (
+                            <div className="absolute right-0 top-14 z-[200] min-w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 ">
+                                <button
+                                    className="flex w-full items-center gap-2 bg-transparent px-4 py-2.5 text-left text-sm text-red-500 transition-colors duration-150 hover:bg-gray-50"
+                                    onClick={handleLogout}
+                                >
+                                    <LogoutIcon />
+                                    Sign out
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    <div
+                        ref={menuRef}
+                        className={styles["header-menu-wrapper"]}
+                    >
+                        <button
+                            className={styles["header-menu-btn"]}
+                            onClick={() => setShowMenu((prev) => !prev)}
+                            title="Header Menu"
+                        >
+                            <Menu size={24} stroke={showMenu ? '#2563eb' : '#6b7280'} />
+                        </button>
+
+                        {showMenu && (
+                            <div className={styles["header-menu-dropdown"]}>
+                                <button
+                                    className={styles["header-menu-dropdown-item"]}
+                                    onClick={() => {
+                                        setFeedbackModalOpen(true);
+                                        setShowMenu(false);
+                                    }}
+                                >
+                                    Share Feedback
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

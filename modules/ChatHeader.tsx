@@ -76,8 +76,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
         }
 
         const response = await submitFeedback(feedback);
-        setFeedbackModalOpen(false);
         if (response?.status === 201) {
+            // closing the modal only if the feedback is successfully submitted
+            // if  anything goes wrong, modal would stay as opened - user can chose to close or retry
+            setFeedbackModalOpen(false);
             toast.success("Thanks for your feedback")
         } else {
             toast.error("Sorry, something went wrong in submitting feedback")

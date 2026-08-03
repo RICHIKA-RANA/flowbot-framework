@@ -10,8 +10,9 @@ import { getPublicChatLink } from '@/apiRequests';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
 import config from '@/config/constants';
 import { ChatHeaderProps } from '@/types/chat';
+import ChatTabs from './ChatTabs';
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, sessions, setSessions, activeSessionId, onSelectSession, onNewChat, onCountChange }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
@@ -108,18 +109,26 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
     }
 
     return (
-        <div className="flex h-14 items-center justify-between self-stretch border border-b border-gray-200 bg-white px-4 py-2 ">
-            <div className="flex items-center gap-4">
+        <div className="flex justify-between h-12 w-full items-center border border-b border-gray-200 bg-white px-4 py-2 gap-1">
+            <div className="flex flex-1 min-w-0 items-center gap-4 overflow-hidden">
                 <button
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-0 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
                     title="Toggle Sidebar"
                 >
                     <PanelIcon size={20} stroke={"#6b7280"} />
                 </button>
 
-                <span className="text-base font-semibold text-gray-900">
-                    AI Document Chat
+                <span className="flex-shrink-0 text-base font-semibold text-gray-900">
+                    {JSModule.botName || "AI Document Chat"}
                 </span>
+                <ChatTabs 
+                    messages={messages}
+                    sessions={sessions} 
+                    setSessions={setSessions} 
+                    activeSessionId={activeSessionId} 
+                    onSelectSession={onSelectSession} 
+                    onNewChat={onNewChat} 
+                />
             </div>
 
             <div className="flex items-center gap-4">
@@ -130,7 +139,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
                     </div>
                 )}
                 <button
-                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-0 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
                     onClick={onDrawerToggle}
                     title="Toggle Documents"
                 >

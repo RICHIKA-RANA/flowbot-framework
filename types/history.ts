@@ -2,6 +2,7 @@ export interface HistorySessionSummary {
     sessionId: string;
     chatbotId: string;
     createdAt: string;
+    sessionStatus: string;
     firstQuestion: string | null;
 }
 

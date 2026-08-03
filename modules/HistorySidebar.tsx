@@ -128,7 +128,7 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
                 ) : (
                     sessions.map((s) => {
                         const isActive = s.sessionId === selectedSessionId;
-                        const label = s.firstQuestion || 'Untitled query';
+                        const label = s.firstQuestion || 'New Chat';
                         return (
                             <div
                                 key={s.sessionId}

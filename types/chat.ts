@@ -1,5 +1,7 @@
+import { Dispatch, SetStateAction } from 'react';
 import { Document } from 'langchain/document';
 import { AxiosResponse } from 'axios';
+import { HistorySessionSummary } from './history';
 
 export type Message = {
   type: 'apiMessage' | 'userMessage';
@@ -45,4 +47,19 @@ export interface ChatHeaderProps {
   drawerOpen?: boolean;
   onDrawerToggle?: () => void;
   messages?: Message[]
+  sessions: HistorySessionSummary[];
+  setSessions: Dispatch<SetStateAction<HistorySessionSummary[]>>;
+  activeSessionId: string | null;
+  onSelectSession: (sessionId: string) => void;
+  onNewChat: () => void;
+  onCountChange?: (count: number) => void;
+}
+
+export interface ChatTabsProps {
+  messages?: Message[]
+  sessions: HistorySessionSummary[];
+  setSessions: Dispatch<SetStateAction<HistorySessionSummary[]>>;
+  activeSessionId: string | null;
+  onSelectSession: (sessionId: string) => void;
+  onNewChat: () => void;
 }

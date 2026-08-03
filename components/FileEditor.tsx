@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), { ssr: false });
 
@@ -24,7 +24,6 @@ const FileEditor: React.FC<Props> = ({ fileType, fileContent, handleSubmit }) =>
 
   return (
     <>
-      <ToastContainer />
       <div className='flex justify-between p-2 items-center'>
         <h1 className='items-center flex'>Code Editor</h1>
         <button

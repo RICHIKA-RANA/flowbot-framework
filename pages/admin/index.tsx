@@ -4,7 +4,7 @@ import { deleteChatbot, getChatbots } from '@/apiRequests';
 import { LiveChatbot } from '@/types/chat';
 import CustomModal from '@/components/ui/customModal';
 import { useRouter } from 'next/router';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import CopyIcon from '@/assets/svgs/CopyIcon';
 import CloneChatbot from '@/modules/CloneChatbot';
 import Pencil from '@/assets/svgs/Pencil';
@@ -67,7 +67,6 @@ const AdminPage: React.FC = () => {
 
     return (
         <>
-            <ToastContainer />
             {key !== verificationKey ? (
                 <div className='m-8 flex justify-center items-center h-screen'>
                     <h1>{"You don't have access of this page"} <br /> Please contact admin for access. </h1>

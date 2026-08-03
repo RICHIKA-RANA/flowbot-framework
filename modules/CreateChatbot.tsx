@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { UploadChatbotZip, UploadConfig } from "@/apiRequests";
 import Dropdown from "@/components/ui/Dropdown";
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 
 interface CreateChatbotProps {
@@ -61,7 +61,6 @@ const CreateChatbot = ({ title, description, submitButtonText, inputList, allowe
 
     return (
         <>
-            <ToastContainer />
             <div className="flex justify-center w-full">
                 <div
                     className="relative min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 bg-gray-500 bg-no-repeat bg-cover relative items-center"

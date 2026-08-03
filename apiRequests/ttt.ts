@@ -96,6 +96,22 @@ export const getDocumentTreeJSon = async (graphId: string) => {
     }
 }
 
+export const getDocumentFile = async (graphId: string): Promise<Blob | null> => {
+    try {
+        const response = await axiosTTTInstance.get(`/v1/documents/${encodeURIComponent(graphId)}/file`, {
+            responseType: 'blob',
+        });
+        return response?.data ?? null;
+    } catch (error: any) {
+        console.log(`Error in fetching document file with graphId: ${graphId}`, {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        return null;
+    }
+}
+
 export const listPublicNamespaces = async () => {
     try {
         const response = await axiosTTTInstance.get(`/public/namespaces`);

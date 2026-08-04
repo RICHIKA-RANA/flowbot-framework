@@ -23,6 +23,9 @@ const MAX_ZOOM = 250;
 const ZOOM_STEP = 10;
 const MIN_HIGHLIGHT_RUN = 4;
 
+const normalizeForMatch = (value: string) =>
+  ` ${value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
@@ -56,19 +59,19 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     return () => observer.disconnect();
   }, [pdfUrl]);
 
-  const needle = (highlight || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const citedText = normalizeForMatch(highlight || '');
   const customTextRenderer = useCallback(
     (layer: { str: string; itemIndex: number }) => {
-      const piece = layer.str.trim();
+      const run = normalizeForMatch(layer.str);
       const isCited =
-        needle &&
-        piece.length >= MIN_HIGHLIGHT_RUN &&
-        needle.includes(piece.toLowerCase());
+        citedText.length > 2 &&
+        run.trim().length >= MIN_HIGHLIGHT_RUN &&
+        citedText.includes(run);
       return isCited
         ? `<mark>${escapeHtml(layer.str)}</mark>`
         : escapeHtml(layer.str);
     },
-    [needle],
+    [citedText],
   );
 
   const title = fileName || 'Document';

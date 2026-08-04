@@ -96,19 +96,20 @@ export const getDocumentTreeJSon = async (graphId: string) => {
     }
 }
 
-export const getDocumentFile = async (graphId: string): Promise<Blob | null> => {
+export const getDocumentFile = async (graphId: string): Promise<{ blob: Blob | null; status?: number }> => {
     try {
         const response = await axiosTTTInstance.get(`/v1/documents/${encodeURIComponent(graphId)}/file`, {
             responseType: 'blob',
         });
-        return response?.data ?? null;
+        return { blob: response?.data ?? null };
     } catch (error: any) {
+        const status = error?.response?.status;
         console.log(`Error in fetching document file with graphId: ${graphId}`, {
             message: error?.message,
-            status: error?.response?.status,
+            status,
             responseData: error?.response?.data
         });
-        return null;
+        return { blob: null, status };
     }
 }
 

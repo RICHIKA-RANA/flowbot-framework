@@ -14,7 +14,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import styles from './ReferenceView.module.css';
-import { PdfViewerProps } from '@/types/ui';
+import { DocumentFileError, PdfViewerProps } from '@/types/ui';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -26,12 +26,24 @@ const MIN_HIGHLIGHT_RUN = 4;
 const normalizeForMatch = (value: string) =>
   ` ${value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
 
+// A failed fetch and a file that won't parse are different problems for the user.
+export const fileErrorMessage = (
+  error?: DocumentFileError,
+  renderFailed?: boolean
+): string | null => {
+  if (error === 'unauthorized') return 'You do not have access to this document.';
+  if (error === 'missing') return 'The original file is not available for this document.';
+  if (error) return 'Could not load this document. Please try again.';
+  if (renderFailed) return 'This document could not be displayed.';
+  return null;
+};
+
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 const PdfViewer: React.FC<PdfViewerProps> = ({
   fileUrl: pdfUrl,
-  fileFailed = false,
+  fileError,
   pageNumber,
   highlight,
   fileName,
@@ -74,6 +86,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     [citedText],
   );
 
+  const failureMessage = fileErrorMessage(fileError, renderFailed);
   const title = fileName || 'Document';
   const downloadName = fileName || 'document.pdf';
 
@@ -173,12 +186,8 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       </div>
 
       <div className={styles.pageArea} ref={pageAreaRef}>
-        {(fileFailed || renderFailed) && (
-          <p className={styles.status}>
-            This document is no longer available in storage.
-          </p>
-        )}
-        {!fileFailed && !renderFailed && !pdfUrl && (
+        {failureMessage && <p className={styles.status}>{failureMessage}</p>}
+        {!failureMessage && !pdfUrl && (
           <p className={styles.status}>Loading…</p>
         )}
         {pdfUrl && (

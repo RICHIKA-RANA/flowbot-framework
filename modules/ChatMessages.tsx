@@ -15,6 +15,7 @@ import { FileText, ChevronUp } from "lucide-react";
 import { Document } from "langchain/document";
 import SourcePanel from "./SourcePanel";
 import { getDocumentFile } from "@/apiRequests/ttt";
+import { DocumentFileError } from "@/types/ui";
 
 interface ChatMessageProps {
     chatId: string;
@@ -45,7 +46,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
     const [docExpanded, setDocExpanded] = useState<boolean>(false);
     const openedGraphId: string | undefined = openedSource?.metadata?.graph_id;
     const [fileUrl, setFileUrl] = useState<string>('');
-    const [fileFailed, setFileFailed] = useState<boolean>(false);
+    const [fileError, setFileError] = useState<DocumentFileError | undefined>(undefined);
     const { JSModule, styles } = useContext(ThemeContext);
     const router = useRouter();
     const messageListRef = useRef<HTMLDivElement>(null);
@@ -63,14 +64,20 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
         let cancelled = false;
 
         (async () => {
-            const blob = await getDocumentFile(openedGraphId);
+            const { blob, status } = await getDocumentFile(openedGraphId);
             if (cancelled) return;
             if (!blob) {
-                setFileFailed(true);
+                setFileError(
+                    status === 401 || status === 403
+                        ? 'unauthorized'
+                        : status === 404
+                            ? 'missing'
+                            : 'error'
+                );
                 return;
             }
             objectUrl = URL.createObjectURL(blob);
-            setFileFailed(false);
+            setFileError(undefined);
             setFileUrl(objectUrl);
         })();
 
@@ -387,7 +394,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                         <ReferenceViewer
                             key={`${openedGraphId}:${openedSource.metadata?.pageNumber}`}
                             fileUrl={fileUrl}
-                            fileFailed={fileFailed}
+                            fileError={fileError}
                             pageNumber={Number(openedSource.metadata?.pageNumber) || 1}
                             highlight={openedSource.pageContent}
                             fileName={openedSource.metadata?.filename}

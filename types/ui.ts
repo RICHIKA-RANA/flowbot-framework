@@ -26,9 +26,12 @@ export interface MenuItemProps {
   onClick: () => void;
   danger?: boolean;
 }
+
+export type DocumentFileError = 'unauthorized' | 'missing' | 'error';
+
 export interface PdfViewerProps {
   fileUrl: string;
-  fileFailed?: boolean;
+  fileError?: DocumentFileError;
   pageNumber: number;
   highlight?: string;
   fileName?: string;

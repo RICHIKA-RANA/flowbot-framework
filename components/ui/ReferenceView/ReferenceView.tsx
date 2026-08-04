@@ -14,6 +14,7 @@ import {
   Minimize2,
 } from 'lucide-react';
 import styles from './ReferenceView.module.css';
+import { PdfViewerProps } from '@/types/ui';
 
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
@@ -21,17 +22,6 @@ const MIN_ZOOM = 50;
 const MAX_ZOOM = 250;
 const ZOOM_STEP = 10;
 const MIN_HIGHLIGHT_RUN = 4;
-
-interface PdfViewerProps {
-  fileUrl: string;
-  fileFailed?: boolean;
-  pageNumber: number;
-  highlight?: string;
-  fileName?: string;
-  expanded?: boolean;
-  onToggleExpand?: () => void;
-  onClose?: () => void;
-}
 
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');

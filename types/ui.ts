@@ -26,3 +26,13 @@ export interface MenuItemProps {
   onClick: () => void;
   danger?: boolean;
 }
+export interface PdfViewerProps {
+  fileUrl: string;
+  fileFailed?: boolean;
+  pageNumber: number;
+  highlight?: string;
+  fileName?: string;
+  expanded?: boolean;
+  onToggleExpand?: () => void;
+  onClose?: () => void;
+}

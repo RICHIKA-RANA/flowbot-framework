@@ -49,7 +49,7 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
 
     return (
         <div className="flex flex-1 min-w-0 items-center overflow-hidden">
-            <div className="flex-1 min-w-0 overflow-x-auto">
+            <div className="flex-1 min-w-0 overflow-x-auto no-scrollbar ">
                 <div className="flex w-max items-center gap-1">
                     {activeSessions.map((tab) => {
                         const isLastActiveSession = activeSessions.length === 1;
@@ -57,10 +57,10 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
                             <div
                                 key={tab.sessionId}
                                 onClick={() => onSelectSession(tab.sessionId)}
-                                className={`group relative flex h-10 shrink-0 items-center gap-2 p-2 text-sm transition-colors border-0
+                                className={`group relative flex h-10 shrink-0 items-center gap-2 p-2 text-sm transition-colors border
                                     ${activeSessionId === tab.sessionId
-                                        ? "bg-white font-medium border border-slate-100 rounded-t-md rounded-b-none hover:bg-zinc-100"
-                                        : "bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-600"
+                                        ? "bg-white font-medium border border-gray-300 border-b-0 rounded-t-md rounded-b-none hover:bg-zinc-100"
+                                        : "bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-400"
                                     }
                                   `}
                             >
@@ -83,7 +83,7 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
 
             {/* 2. FIXED "+" BUTTON (Outside the scroll div so it stays visible) */}
             <button
-                className="ml-1 flex h-9 w-9 shrink-0"
+                className="ml-1 flex h-9 w-9 p-1 shrink-0 text-center justify-center items-center bg-gray-300 "
                 title="New Tab"
                 onClick={() => onNewChat()}
             >

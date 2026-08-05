@@ -45,10 +45,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         try {
-            const response = await updateSessionStatus(sessionId, sessionStatus)
+            const response = await updateSessionStatus(sessionId, email, sessionStatus)
+            
+            if (!response) return res.status(404).json({error: 'Session not found' });
             return res.status(200).json(response);
         } catch (err: any) {
-            return res.status(500).json({ error: err.message || 'Something went wrong' });
+            return res.status(err.status || 500).json({ error: err.message || 'Something went wrong' });
         }
     }
 
@@ -114,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(200).json({ sessions: response });
         } catch (err: any) {
             console.error('[GET /api/history/sessions] error:', err);
-            return res.status(500).json({ error: err.message || 'Something went wrong' });
+            return res.status(err.status || 500).json({ error: err.message || 'Something went wrong' });
         }
     }
 }

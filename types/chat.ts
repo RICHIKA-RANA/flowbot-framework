@@ -47,19 +47,18 @@ export interface ChatHeaderProps {
   drawerOpen?: boolean;
   onDrawerToggle?: () => void;
   messages?: Message[]
-  sessions: HistorySessionSummary[];
-  setSessions: Dispatch<SetStateAction<HistorySessionSummary[]>>;
-  activeSessionId: string | null;
-  onSelectSession: (sessionId: string) => void;
-  onNewChat: () => void;
-  onCountChange?: (count: number) => void;
+  sessions?: HistorySessionSummary[];
+  setSessions?: Dispatch<SetStateAction<HistorySessionSummary[]>>;
+  activeSessionId?: string | null;
+  onSelectSession?: (sessionId: string) => void;
+  onNewChat?: () => void;
 }
 
 export interface ChatTabsProps {
   messages?: Message[]
   sessions: HistorySessionSummary[];
-  setSessions: Dispatch<SetStateAction<HistorySessionSummary[]>>;
-  activeSessionId: string | null;
-  onSelectSession: (sessionId: string) => void;
-  onNewChat: () => void;
+  setSessions?: Dispatch<SetStateAction<HistorySessionSummary[]>>;
+  activeSessionId?: string | null;
+  onSelectSession?: (sessionId: string) => void;
+  onNewChat?: () => void;
 }

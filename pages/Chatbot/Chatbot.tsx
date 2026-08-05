@@ -197,7 +197,6 @@ const Chatbot: React.FC = () => {
           activeSessionId={selectedSessionId ?? currentSession}
           onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}
-          onCountChange={handleSessionsCount}
         />
         <div style={{
           flex: 1,
@@ -211,6 +210,7 @@ const Chatbot: React.FC = () => {
               onNewChat={handleNewChat}
               reloadToken={historyReloadToken}
               onCountChange={handleSessionsCount}
+              messages={messages}
             />
           ) : leftPanelExpanded && JSModule?.leftPanelHtml ? (
             <div

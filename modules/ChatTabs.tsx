@@ -7,22 +7,22 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
 
     const handleCloseTab = async (sessionId: string) => {
         await updateSessionStatus(sessionId, 'INACTIVE')
-        setSessions((prevTabs) => {
-            const updatedTabs = prevTabs.filter(
-                (tab) => tab.sessionId !== sessionId
-            );
-            if (activeSessionId === sessionId) {
-                const activeTabs = updatedTabs.filter(
-                    (tab) => tab.sessionStatus === 'ACTIVE'
-                );
-
-                onSelectSession(
-                    activeTabs[0]?.sessionId ?? null
-                );
-            }
-
-            return updatedTabs;
-        });
+        const activeTabs = sessions?.filter((tab) => tab.sessionStatus === 'ACTIVE');
+        const closingIndex = activeTabs?.findIndex((tab) => tab.sessionId === sessionId);
+        const updatedActiveTabs = activeTabs?.filter((tab) => tab.sessionId !== sessionId);
+        
+        setSessions?.(
+            sessions.map((tab) =>
+                tab.sessionId === sessionId
+                    ? { ...tab, sessionStatus: 'INACTIVE' }
+                    : tab
+            )
+        );
+        
+        if (activeSessionId === sessionId) {
+            const nextSession = updatedActiveTabs[closingIndex - 1] ?? updatedActiveTabs[closingIndex];
+            if (nextSession) onSelectSession?.(nextSession.sessionId);
+        }
     };
 
     useEffect(() => {
@@ -30,7 +30,7 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
         const firstUserMessage = messages.find(m => m.type === "userMessage");
         if (!firstUserMessage) return;
 
-        setSessions(prev =>
+        setSessions?.(prev =>
             prev.map(session =>
                 session.sessionId === activeSessionId &&
                     !session.firstQuestion
@@ -42,10 +42,10 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
             )
         );
     }, [messages, activeSessionId]);
-
-    const activeSessions = sessions
-        .toReversed()
-        .filter(tab => tab.sessionStatus === 'ACTIVE');
+   
+    const activeSessions = [...sessions]
+        ?.reverse()
+        ?.filter(tab => tab.sessionStatus === 'ACTIVE');
 
     return (
         <div className="flex flex-1 min-w-0 items-center overflow-hidden">
@@ -56,7 +56,7 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
                         return (
                             <div
                                 key={tab.sessionId}
-                                onClick={() => onSelectSession(tab.sessionId)}
+                                onClick={() => onSelectSession?.(tab.sessionId)}
                                 className={`group relative flex h-10 shrink-0 items-center gap-2 p-2 text-sm transition-colors border
                                     ${activeSessionId === tab.sessionId
                                         ? "bg-white font-medium border border-gray-300 border-b-0 rounded-t-md rounded-b-none hover:bg-zinc-100"
@@ -82,13 +82,23 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
             </div>
 
             {/* 2. FIXED "+" BUTTON (Outside the scroll div so it stays visible) */}
-            <button
-                className="ml-1 flex h-9 w-9 p-1 shrink-0 text-center justify-center items-center bg-gray-300 "
-                title="New Tab"
-                onClick={() => onNewChat()}
-            >
-                +
-            </button>
+            {
+                activeSessionId && (
+                    <button
+                    className={`ml-1 flex h-9 w-9 shrink-0 items-center justify-center bg-gray-300 rounded
+                        ${
+                          !messages?.length
+                            ? "cursor-not-allowed opacity-50"
+                            : "cursor-pointer hover:bg-gray-400"
+                        }`}
+                        disabled={!messages?.length}
+                        title="New Tab"
+                        onClick={onNewChat}
+                    >
+                        +
+                    </button>
+                )
+            }
         </div>
     )
 }

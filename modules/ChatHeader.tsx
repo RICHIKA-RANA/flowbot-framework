@@ -16,7 +16,7 @@ import FeedbackForm from '@/components/FeedbackForm';
 import { FeedbackPayload } from '@/types/feedback';
 import ChatTabs from './ChatTabs';
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, sessions, setSessions, activeSessionId, onSelectSession, onNewChat, onCountChange }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, sessions, setSessions, activeSessionId, onSelectSession, onNewChat }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
@@ -167,11 +167,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
                 </button>
 
                 <span className="flex-shrink-0 text-base font-semibold text-gray-900">
-                    {JSModule.botName || "AI Document Chat"}
+                    {JSModule?.botName || "AI Document Chat"}
                 </span>
                 <ChatTabs
                     messages={messages}
-                    sessions={sessions}
+                    sessions={sessions || []}
                     setSessions={setSessions}
                     activeSessionId={activeSessionId}
                     onSelectSession={onSelectSession}

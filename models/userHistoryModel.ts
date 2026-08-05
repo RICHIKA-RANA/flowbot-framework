@@ -79,7 +79,7 @@ const UserHistorySchema = new Schema<IUserHistory>(
     {
         userId:    { type: Schema.Types.ObjectId, ref: 'User', default: null },
         sessionId: { type: String, required: true },
-        sessionStatus: { type: String, required: true, default: 'ACTIVE' },
+        sessionStatus: { type: String, enum: ['ACTIVE', 'INACTIVE'], required: true, default: 'ACTIVE' },
         email:     { type: String, default: null },
         chatbotId: { type: String, required: true },
         documents: { type: [DocumentEntrySchema], default: [] },
@@ -203,13 +203,18 @@ export const getHistoryDocumentBySessionId = async (
 // updates the status of a session.
 export const updateSessionStatus = async (
     sessionId: string,
+    email: string,
     status: 'ACTIVE' | 'INACTIVE'
-): Promise<void> => {
-    await UserHistoryModel.findOneAndUpdate(
-        { sessionId },
+): Promise<IUserHistory | null> => {
+    return await UserHistoryModel.findOneAndUpdate(
+        { sessionId, email },
         {
             $set: { sessionStatus: status },
             $currentDate: { updatedAt: true },
+        },
+        { 
+            runValidators: true,
+            new: true
         }
     );
 };

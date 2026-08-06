@@ -4,6 +4,7 @@ import PanelIcon from '@/assets/svgs/PanelIcon';
 import ChevronDownIcon from '@/assets/svgs/ChevronDownIcon';
 import LogoutIcon from '@/assets/svgs/LogoutIcon';
 import ShareIcon from '@/assets/svgs/ShareIcon';
+import { ManageProjectsButton } from '@/modules/ManageProjectsPanel';
 import { useChatbot } from '@/hooks/useChatbot';
 import { ToastContainer, toast } from 'react-toastify';
 import { getPublicChatLink } from '@/apiRequests';
@@ -11,7 +12,7 @@ import { getCurrentSessionId } from '@/utils/sessionJobs';
 import config from '@/config/constants';
 import { ChatHeaderProps } from '@/types/chat';
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, manageProjectsOpen = false, onToggleManageProjects }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
@@ -122,6 +123,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
             <div className={styles?.['header-right']}>
                 <ToastContainer />
+                {onToggleManageProjects && (
+                    <ManageProjectsButton
+                        open={manageProjectsOpen}
+                        onToggle={onToggleManageProjects}
+                    />
+                )}
                 {canShareChat && (
                     <div onClick={handleShareChat}>
                         <ShareIcon />

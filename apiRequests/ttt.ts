@@ -1,11 +1,14 @@
 import { axiosTTTInstance } from "@/utils/axiosInstance"
 
-export const uploadDocument = async (file: File, jobSessionId?: string) => {
+export const uploadDocument = async (file: File, jobSessionId?: string, projectId?: string) => {
     try {
         const formData = new FormData();
         formData.append('file', file);
         if (jobSessionId) {
             formData.append('session_id', jobSessionId);
+        }
+        if (projectId) {
+            formData.append('project_id', projectId);
         }
         const response = await axiosTTTInstance.post(`/v1/documents`, formData);
         return response?.data;
@@ -122,6 +125,52 @@ export const listPublicNamespaceDocuments = async (namespace: string, limit = 50
             status: error?.response?.status,
             responseData: error?.response?.data
         });
+        return false;
+    }
+}
+
+export const listProjectTree = async (limit = 50, offset = 0) => {
+    try {
+        const response = await axiosTTTInstance.get(`/v1/projects/tree`, {
+            params: { limit, offset }
+        });
+        return response?.data;
+    } catch (error: any) {
+        console.log(`something went wrong while listing the project tree`, {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        return false;
+    }
+}
+
+export const createProject = async (name: string, logoDataUri: string) => {
+    try {
+        const response = await axiosTTTInstance.post(`/v1/projects`, { name, logo: logoDataUri });
+        return { ok: true, project: response?.data };
+    } catch (error: any) {
+        console.log(`something went wrong while creating project`, {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        const body = error?.response?.data;
+        return {
+            ok: false,
+            status: error?.response?.status,
+            message: body?.detail?.message || body?.message || 'Could not create the project. Please try again.',
+        };
+    }
+}
+
+export const fetchProjectLogoObjectUrl = async (projectId: string) => {
+    try {
+        const response = await axiosTTTInstance.get(`/v1/projects/${encodeURIComponent(projectId)}/logo`, {
+            responseType: 'blob',
+        });
+        return URL.createObjectURL(response?.data);
+    } catch (error: any) {
         return false;
     }
 }

@@ -45,4 +45,6 @@ export interface ChatHeaderProps {
   drawerOpen?: boolean;
   onDrawerToggle?: () => void;
   messages?: Message[]
+  manageProjectsOpen?: boolean
+  onToggleManageProjects?: () => void
 }

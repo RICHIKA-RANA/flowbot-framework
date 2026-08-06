@@ -26,3 +26,15 @@ export interface MenuItemProps {
   onClick: () => void;
   danger?: boolean;
 }
+
+export interface DrawerProps {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  subtitle?: string;
+  width?: number;
+  resizable?: boolean;
+  className?: string;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}

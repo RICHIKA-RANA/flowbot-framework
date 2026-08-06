@@ -4,9 +4,12 @@ ArrowLeftRight,
   ChevronUp,
   ChevronDown,
   ChevronRight,
+  ArrowRight,
+  ArrowLeft,
   Plus,
   ImagePlus,
   Building2,
+  Folder,
 } from 'lucide-react';
 import { CustomModal, Drawer } from '@/components/ui';
 import {
@@ -22,12 +25,14 @@ import {
   Project,
 } from '@/types/project';
 
-// POST /v1/projects carries the logo inline as a base64 data URI, so keep the
-// source file small enough to survive ~33% base64 inflation.
+
 const MAX_LOGO_BYTES = 1_000_000;
+const RECENT_LIMIT = 3;
 
 const EMPTY_STATE = 'px-4 py-5 text-center text-[13px] text-gray-500';
-const CTA_BUTTON ='flex w-full items-center gap-2.5 px-1 py-3 text-[15px] font-semibold text-blue-600 hover:text-blue-700';
+const CTA_BUTTON ='flex w-full items-center gap-3 px-4 py-3 text-[15px] font-semibold text-blue-600 hover:bg-gray-50';
+const CTA_DIVIDER = 'border-t border-gray-200';
+const CTA_GROUP = '-m-[14px] flex flex-col';
 const FIELD = 'w-full rounded-lg border border-gray-200 px-2.5 py-2 text-[13px] outline-none focus:border-blue-500';
 
 const readAsDataUri = (file: File): Promise<string> =>
@@ -113,6 +118,7 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
   const [creating, setCreating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [showAll, setShowAll] = useState(false);
   const [name, setName] = useState('');
   const [logoDataUri, setLogoDataUri] = useState('');
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -256,9 +262,12 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
     return (
       <>
         <div className="mx-0.5 mb-2 mt-1 text-[11px] font-bold uppercase tracking-[0.06em] text-gray-500">
-          Recent projects
+          {showAll ? `All projects (${projects.length})` : 'Recent projects'}
         </div>
-        {projects.map(renderProjectRow)}
+        {(showAll ? projects : projects.slice(0, RECENT_LIMIT)).map(
+          renderProjectRow,
+        )}
+        <div className="-mx-3 mt-1 border-t border-gray-200" />
       </>
     );
   };
@@ -269,10 +278,30 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
         open={open}
         onClose={onClose}
         footer={
-          <button onClick={openCreateModal} className={CTA_BUTTON}>
-            <Plus size={18} />
-            New Project
-          </button>
+          <div className={CTA_GROUP}>
+            <button onClick={openCreateModal} className={CTA_BUTTON}>
+              <Plus size={18} />
+              New Project
+            </button>
+            <div className={CTA_DIVIDER} />
+            <button
+              onClick={() => setShowAll((v) => !v)}
+              className={CTA_BUTTON}
+            >
+              {showAll ? (
+                <>
+                  <ArrowLeft size={18} />
+                  Back
+                </>
+              ) : (
+                <>
+                  <Folder size={18} />
+                  View All Projects
+                  <ArrowRight size={18} />
+                </>
+              )}
+            </button>
+          </div>
         }
       >
         {renderBody()}

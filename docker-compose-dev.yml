@@ -30,12 +30,15 @@ services:
       - .env
     volumes:
       - ./configuration:/app/configuration
+      - .:/app/.
     labels:
       - "traefik.port=80"
       - "traefik.enable=true"
       - "traefik.backend=llm-chatbot"
       - "traefik.frontend.rule=Host:${CHAT_HOST}"
       - "traefik.protocol=http"
+    ports:
+      - 3000:3000
     networks:
       - docker_net
 

@@ -56,7 +56,6 @@ const Chatbot: React.FC = () => {
   };
 
   const showNewChatTab = async () => {
-    startNewChat()
     const currentSessionId = getCurrentSessionId()
     await load()
     setSessions((prev) => [
@@ -74,6 +73,7 @@ const Chatbot: React.FC = () => {
   const handleNewChat = async () => {
     if (!messages?.length) return
     setSelectedSessionId(null);
+    startNewChat()
     await showNewChatTab()
     setHistoryReloadToken((t) => t + 1);
   };

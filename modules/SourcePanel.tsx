@@ -1,6 +1,7 @@
 import {
     ChevronRight,
     FileText,
+    ExternalLink,
 } from "lucide-react";
 import ThemeContext from "@/contexts/ThemeContext";
 import { useContext } from "react";
@@ -11,6 +12,7 @@ export default function SourcePanel({
     sources,
     expandedSources,
     onChange,
+    onOpenDocument,
 }: SourcePanelProps) {
 
     const { styles } = useContext(ThemeContext);
@@ -45,9 +47,8 @@ export default function SourcePanel({
                     const isExpanded = expandedSources.has(index);
 
                     return (
-
+                        <div key={index} className={styles.sourceRow}>
                         <button
-                            key={index}
                             className={styles.sourceItem}
                             onClick={() => handleSourceClick(index)}
                         >
@@ -77,6 +78,16 @@ export default function SourcePanel({
                                 }
                             />
                         </button>
+                        {onOpenDocument && (
+                            <button
+                                className={styles.sourceOpenDoc}
+                                onClick={() => onOpenDocument(source)}
+                            >
+                                <span>Open in Document</span>
+                                <ExternalLink size={14} />
+                            </button>
+                        )}
+                        </div>
                     )
                 })}
             </div>

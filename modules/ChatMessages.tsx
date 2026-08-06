@@ -1,9 +1,7 @@
-import config from "@/config/constants";
 import Libby from "@/assets/svgs/Libby";
 import You from "@/assets/svgs/You";
 import ToolTip from "@/assets/svgs/icons/ToolTip";
 import LoadingDots from "@/components/ui/LoadingDots";
-import ReferenceViewOuter from "@/components/ui/ReferenceView/ReferenceViewOuter";
 import ReferenceViewer from "@/components/ui/ReferenceView/ReferenceView";
 import ThemeContext from "@/contexts/ThemeContext";
 import Image from "next/image";
@@ -16,6 +14,8 @@ import { useRouter } from 'next/router';
 import { FileText, ChevronUp } from "lucide-react";
 import { Document } from "langchain/document";
 import SourcePanel from "./SourcePanel";
+import { getDocumentFile } from "@/apiRequests/ttt";
+import { DocumentFileError } from "@/types/ui";
 
 interface ChatMessageProps {
     chatId: string;
@@ -29,11 +29,24 @@ interface ChatMessageProps {
     footer?: React.ReactNode
 }
 
+const documentColumnStyle = (expanded: boolean): React.CSSProperties => ({
+    width: expanded ? '78%' : '46%',
+    flexShrink: 0,
+    height: '100%',
+    overflow: 'hidden',
+    transition: 'width 160ms ease',
+});
+
 export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loading, handleSubmit, typingState, handleFileUpload, references, onUploadClick, footer }) => {
 
     const [expandedMessageIndex, setExpandedMessageIndex] = useState<number | null>(null);
     const [selectedSourceReferences, setSelectedSourceReferences] = useState<Document[]>([]);
     const [sourceExpansion, setSourceExpansion] = useState<Record<number, Set<number>>>({});
+    const [openedSource, setOpenedSource] = useState<Document | null>(null);
+    const [docExpanded, setDocExpanded] = useState<boolean>(false);
+    const openedGraphId: string | undefined = openedSource?.metadata?.graph_id;
+    const [fileUrl, setFileUrl] = useState<string>('');
+    const [fileError, setFileError] = useState<DocumentFileError | undefined>(undefined);
     const { JSModule, styles } = useContext(ThemeContext);
     const router = useRouter();
     const messageListRef = useRef<HTMLDivElement>(null);
@@ -44,6 +57,36 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
             messageListRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
     }, [messages]);
+
+    useEffect(() => {
+        if (!openedGraphId) return;
+        let objectUrl = '';
+        let cancelled = false;
+
+        (async () => {
+            const { blob, status } = await getDocumentFile(openedGraphId);
+            if (cancelled) return;
+            if (!blob) {
+                setFileError(
+                    status === 401 || status === 403
+                        ? 'unauthorized'
+                        : status === 404
+                            ? 'missing'
+                            : 'error'
+                );
+                return;
+            }
+            objectUrl = URL.createObjectURL(blob);
+            setFileError(undefined);
+            setFileUrl(objectUrl);
+        })();
+
+        return () => {
+            cancelled = true;
+            setFileUrl('');
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [openedGraphId]);
 
     useEffect(() => {
         if (expandedMessageIndex !== null && expandedMessageIndex >= messages.length) {
@@ -337,25 +380,33 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                     [expandedMessageIndex]: next,
                                 }))
                             }
+                            onOpenDocument={
+                                JSModule?.referenceDocumentViewEnabled ? setOpenedSource : undefined
+                            }
                         />
                     )
                 }
             </div>
             {/* here we will be showing the reference documents */}
             {
-                  JSModule?.referenceDocumentViewEnabled &&
-                  references &&
-                  <ReferenceViewOuter>
-                    {
-                      references.map((reference: IReferences, index) => (
+                JSModule?.referenceDocumentViewEnabled && openedGraphId && openedSource && (
+                    <div style={documentColumnStyle(docExpanded)}>
                         <ReferenceViewer
-                        key={`${reference.documentName}-${index}`}
-                        link={`${config.NEXT_PUBLIC_BACKEND_CONNECTOR_HOST}/data/${reference.documentName}.pdf?chatbot_id=document-${chatId}`}
-                        pageNumber={Number(reference.pageNumber)}
+                            key={`${openedGraphId}:${openedSource.metadata?.pageNumber}`}
+                            fileUrl={fileUrl}
+                            fileError={fileError}
+                            pageNumber={Number(openedSource.metadata?.pageNumber) || 1}
+                            highlight={openedSource.pageContent}
+                            fileName={openedSource.metadata?.filename}
+                            expanded={docExpanded}
+                            onToggleExpand={() => setDocExpanded(prev => !prev)}
+                            onClose={() => {
+                                setOpenedSource(null);
+                                setDocExpanded(false);
+                            }}
                         />
-                      ))
-                    }
-                  </ReferenceViewOuter>
+                    </div>
+                )
             }
 
         </div>

@@ -1,22 +1,4 @@
 services:
-  traefik:
-    image: traefik:v1.7-alpine
-    container_name: traefik
-    logging:
-      options:
-        max-size: "50m"
-        max-file: "3"
-    command: >
-      --logLevel='INFO' --web --InsecureSkipVerify=true --defaultentrypoints=https,http --entryPoints='Name:http Address::80' --entryPoints='Name:https Address::443 TLS Redirect.EntryPoint:http' --retry --docker --docker.endpoint='unix:///var/run/docker.sock' --docker.exposedbydefault=true --docker.watch=true
-    ports:
-      - "80:80"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    labels:
-      - "traefik.port=8080"
-    networks:
-      - docker_net
-
   llm-chatbot:
     build:
       context: ./
@@ -31,12 +13,6 @@ services:
     volumes:
       - ./configuration:/app/configuration
       - .:/app/.
-    labels:
-      - "traefik.port=80"
-      - "traefik.enable=true"
-      - "traefik.backend=llm-chatbot"
-      - "traefik.frontend.rule=Host:${CHAT_HOST}"
-      - "traefik.protocol=http"
     ports:
       - 3000:3000
     networks:

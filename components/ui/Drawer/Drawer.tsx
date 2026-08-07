@@ -1,10 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { DrawerProps } from '@/types/ui';
-
-const COLORS = {
-  border: '#e5e7eb',
-  textMuted: '#6b7280',
-};
+import { cn } from '@/utils/cn';
 
 const MIN_WIDTH = 250;
 const MAX_WIDTH = 600;
@@ -51,93 +47,46 @@ const Drawer: React.FC<DrawerProps> = ({
 
   return (
     <div
-      className={className}
-      style={{
-        position: 'relative',
-        flexShrink: 0,
-        width: resizable ? dragWidth : width,
-        maxWidth: '92vw',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        ...(className
-          ? {}
-          : { background: '#fff', borderLeft: `1px solid ${COLORS.border}` }),
-      }}
+      style={{ width: resizable ? dragWidth : width }}
+      className={cn(
+        'relative flex h-full max-w-[92vw] shrink-0 flex-col',
+        !className && 'border-l border-gray-200 bg-white',
+        className,
+      )}
     >
       {resizable && (
         <div
           onMouseDown={handleMouseDown}
           role="separator"
           aria-orientation="vertical"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: -3,
-            width: 6,
-            height: '100%',
-            cursor: 'col-resize',
-          }}
+          className="absolute -left-[3px] top-0 h-full w-1.5 cursor-col-resize"
         />
       )}
 
       {title && (
-        <div
-          style={{
-            padding: '16px 18px 12px',
-            borderBottom: `1px solid ${COLORS.border}`,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                color: COLORS.textMuted,
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-              }}
-            >
+        <div className="border-b border-gray-200 px-[18px] pb-3 pt-4">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-bold uppercase tracking-[0.04em] text-gray-500">
               {title}
             </div>
             <button
               onClick={onClose}
               aria-label="Close"
-              style={{
-                border: 'none',
-                background: 'none',
-                cursor: 'pointer',
-                color: COLORS.textMuted,
-                fontSize: 16,
-                lineHeight: 1,
-                padding: 4,
-              }}
+              className="p-1 text-base leading-none text-gray-500"
             >
               ✕
             </button>
           </div>
           {subtitle && (
-            <p
-              style={{ margin: '6px 0 0', fontSize: 12, color: COLORS.textMuted }}
-            >
-              {subtitle}
-            </p>
+            <p className="mb-0 mt-1.5 text-xs text-gray-500">{subtitle}</p>
           )}
         </div>
       )}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>{children}</div>
+      <div className="flex-1 overflow-y-auto p-3">{children}</div>
 
       {footer && (
-        <div style={{ borderTop: `1px solid ${COLORS.border}`, padding: 14 }}>
-          {footer}
-        </div>
+        <div className="border-t border-gray-200 p-[14px]">{footer}</div>
       )}
     </div>
   );

@@ -58,6 +58,11 @@ export const getActiveProjectId = (): string => {
     return sessionStorage.getItem(ACTIVE_PROJECT_KEY) || '';
 };
 
+export const clearActiveProjectId = (): void => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.removeItem(ACTIVE_PROJECT_KEY);
+};
+
 // ─── Graph IDs ────────────────────────────────────────────────────────────
 // Derived on demand from the backend's session document list (source of
 // truth) rather than tracked in a local sessionStorage array, so it stays

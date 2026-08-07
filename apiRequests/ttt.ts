@@ -155,11 +155,10 @@ export const createProject = async (name: string, logoDataUri: string) => {
             status: error?.response?.status,
             responseData: error?.response?.data
         });
-        const body = error?.response?.data;
         return {
             ok: false,
             status: error?.response?.status,
-            message: body?.detail?.message || body?.message || 'Could not create the project. Please try again.',
+            detail: error?.response?.data?.detail,
         };
     }
 }

@@ -238,6 +238,7 @@ export const useTainPDF = () => {
     };
 
     const addFile = async (file: File) => {
+        const projectId = getActiveProjectId();
         const entry: FileUploadStatus = {
             name: file.name,
             size: file.size,
@@ -253,9 +254,8 @@ export const useTainPDF = () => {
         try {
             const jobSessionId = jobSessionIdRef.current || getJobSessionId();
             jobSessionIdRef.current = jobSessionId;
-            // single read point: every upload entry path lands here, so the
-            // active project is applied without threading a prop per caller
-            const res = await uploadDocument(file, jobSessionId, getActiveProjectId());
+
+            const res = await uploadDocument(file, jobSessionId, projectId);
             if (!res?.job_id) throw new Error('upload failed');
             const { job_id } = res;
             setUploads((prev: FileUploadStatus[]) =>

@@ -13,7 +13,7 @@ import ThemeContext from '@/contexts/ThemeContext';
 import { generateRandomString } from '@/utils/generateRandomeString';
 import { getDocumentNameAndPageNumber } from '@/utils/extractDocumentNameAndPage';
 import { GRAPH_IDS_CHANGED_EVENT, SESSION_CHANGED_EVENT } from '@/utils/sessionJobs';
-import { getCurrentSessionId, getGraphIds, setCurrentSessionId, resetJobSessionId } from '@/utils/sessionJobs';
+import { getCurrentSessionId, getGraphIds, setCurrentSessionId, resetJobSessionId, clearActiveProjectId } from '@/utils/sessionJobs';
 import { listPublicNamespaces, listPublicNamespaceDocuments } from '@/apiRequests/ttt';
 import { NamespaceMode, PublicDocument, NamespaceState } from '@/types/namespace';
 // TODO(demo-seed): temporary frontend demo docs; remove once demo-library is seeded on the backend
@@ -810,6 +810,7 @@ export const useChatbot = () => {
         const newSessionId = generateRandomString('session_', 9);
         setCurrentSession(newSessionId);
         setCurrentSessionId(newSessionId);
+        clearActiveProjectId();
         resetJobSessionId();
         setMessageState({ messages: [], history: [] });
         setReferences([]);

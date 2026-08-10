@@ -13,7 +13,9 @@ import { DocumentTreeData } from '@/types/documentTree';
 import SuggestedQueries from '@/modules/SuggestedQueries';
 import HistorySidebar from '@/modules/HistorySidebar';
 import PastConversation from '@/modules/PastConversation';
-import { GRAPH_IDS_CHANGED_EVENT } from '@/utils/sessionJobs';
+import { HistorySessionSummary } from '@/types/history';
+import { listHistorySessions } from '@/apiRequests';
+import { GRAPH_IDS_CHANGED_EVENT, getCurrentSessionId } from '@/utils/sessionJobs';
 
 const Chatbot: React.FC = () => {
   const {
@@ -47,6 +49,7 @@ const Chatbot: React.FC = () => {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [historyReloadToken, setHistoryReloadToken] = useState(0);
   const [hasPriorSessions, setHasPriorSessions] = useState(false);
+  const [sessions, setSessions] = useState<HistorySessionSummary[]>([]);
   const handleSessionsCount = useCallback((n: number) => setHasPriorSessions(n > 0), []);
   const [manageProjectsOpen, setManageProjectsOpen] = useState(false);
   // bumped whenever indexing finishes so the drawer's counts and document
@@ -63,11 +66,41 @@ const Chatbot: React.FC = () => {
     setSelectedSessionId(sessionId === currentSession ? null : sessionId);
   };
 
-  const handleNewChat = () => {
+  const showNewChatTab = async () => {
+    const currentSessionId = getCurrentSessionId()
+    await load()
+    setSessions((prev) => [
+      {
+        sessionId: currentSessionId,
+        chatbotId: String(chatId),
+        createdAt: String(new Date),
+        sessionStatus: 'ACTIVE',
+        firstQuestion: ""
+      },
+      ...prev
+    ])
+  }
+
+  const handleNewChat = async () => {
+    if (!messages?.length) return
     setSelectedSessionId(null);
-    startNewChat();
+    startNewChat()
+    await showNewChatTab()
     setHistoryReloadToken((t) => t + 1);
   };
+
+  const load = useCallback(async () => {
+    const data = await listHistorySessions();
+    setSessions(data);
+    handleSessionsCount(data.length);
+  }, [handleSessionsCount]);
+
+
+  useEffect(() => {
+    if (!currentSession) {
+      showNewChatTab();
+    }
+  }, [currentSession]);
 
   useEffect(() => {
     if (!showHistory || selectedSessionId) return;
@@ -82,7 +115,7 @@ const Chatbot: React.FC = () => {
   const [documentTreeJSon, setDocumentTreeJSon] = useState<DocumentTreeData | null>(null);
 
   const handleSuggestedQueries = (queries: string[]) => {
-    if (queries?.length  > 0) {
+    if (queries?.length > 0) {
       setShowSuggestedQueries(true)
       setSuggestedQueries(queries)
     } else {
@@ -91,14 +124,14 @@ const Chatbot: React.FC = () => {
   }
 
   const latestRequestRef = useRef(0);
-  const switchTab = async (tabName: string, graphId: string ='') => {
+  const switchTab = async (tabName: string, graphId: string = '') => {
     setActiveTabName(tabName)
 
     // if documentTree tab is being selected, then setting the graphId of selected document;
     if (tabName === 'documentTree') {
       const requestId = ++latestRequestRef.current;
       setDocumentTreeLoading(true);
-  
+
       try {
         const response = await getDocumentTreeJSon(graphId);
         if (requestId === latestRequestRef.current && response) {
@@ -172,6 +205,11 @@ const Chatbot: React.FC = () => {
           messages={messages}
           manageProjectsOpen={manageProjectsOpen}
           onToggleManageProjects={() => setManageProjectsOpen((v) => !v)}
+          sessions={sessions}
+          setSessions={setSessions}
+          activeSessionId={selectedSessionId ?? currentSession}
+          onSelectSession={handleSelectSession}
+          onNewChat={handleNewChat}
         />
         <div style={{
           flex: 1,
@@ -185,6 +223,7 @@ const Chatbot: React.FC = () => {
               onNewChat={handleNewChat}
               reloadToken={historyReloadToken}
               onCountChange={handleSessionsCount}
+              messages={messages}
             />
           ) : leftPanelExpanded && JSModule?.leftPanelHtml ? (
             <div
@@ -249,7 +288,7 @@ const Chatbot: React.FC = () => {
                             <Loader />
                           </div>
                         </div>
-                      ) : (                
+                      ) : (
                         documentTreeJSon?.nodes?.length ? (
                           <DocumentTree data={documentTreeJSon} />
                         ) : (

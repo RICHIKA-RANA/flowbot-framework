@@ -1,7 +1,10 @@
+import { Message } from "./chat";
+
 export interface HistorySessionSummary {
     sessionId: string;
     chatbotId: string;
     createdAt: string;
+    sessionStatus: string;
     firstQuestion: string | null;
 }
 
@@ -37,6 +40,7 @@ export interface HistorySidebarProps {
     onNewChat: () => void;
     reloadToken: number;
     onCountChange?: (count: number) => void;
+    messages: Message[];
 }
 
 export interface PastConversationProps {

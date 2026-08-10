@@ -217,14 +217,7 @@ export const useChatbot = () => {
                 if (typeof chatId === 'string') {
                     setNewChatRoom(chatId);
                     if (!currentSession) {
-                        const newSessionId = generateRandomString('session_', 9);
-                        setCurrentSession(newSessionId);
-
-                        // Persist to sessionStorage so useTrainPDF can read it without
-                        // prop drilling. Cleared automatically when the tab closes.
-                        // TODO: when "New Chat" button is added, call setCurrentSessionId
-                        //       with the newly generated session ID at that point too.
-                        setCurrentSessionId(newSessionId);
+                        startNewChat()
                     }
                 }
                 setBotLoading(false);

@@ -30,6 +30,7 @@ export interface IChatEntry {
 export interface IUserHistory extends Document {
     userId: mongoose.Types.ObjectId | null; // ref → users._id, null for anonymous
     sessionId: string;
+    sessionStatus: string;
     email: string | null;                   // null when user is not logged in
     chatbotId: string;
     documents: IDocumentEntry[];
@@ -78,6 +79,7 @@ const UserHistorySchema = new Schema<IUserHistory>(
     {
         userId:    { type: Schema.Types.ObjectId, ref: 'User', default: null },
         sessionId: { type: String, required: true },
+        sessionStatus: { type: String, enum: ['ACTIVE', 'INACTIVE'], required: true, default: 'ACTIVE' },
         email:     { type: String, default: null },
         chatbotId: { type: String, required: true },
         documents: { type: [DocumentEntrySchema], default: [] },
@@ -121,7 +123,7 @@ export const upsertUserHistory = async (
             },
             $currentDate: { updatedAt: true },
         },
-        { new: true, upsert: true }
+        { new: true, upsert: true, setDefaultsOnInsert: true }
     );
     return result as IUserHistory;
 };
@@ -196,6 +198,25 @@ export const getHistoryDocumentBySessionId = async (
     sessionId: string
 ): Promise<IUserHistory | null> => {
     return await UserHistoryModel.findOne({ sessionId });
+};
+
+// updates the status of a session.
+export const updateSessionStatus = async (
+    sessionId: string,
+    email: string,
+    status: 'ACTIVE' | 'INACTIVE'
+): Promise<IUserHistory | null> => {
+    return await UserHistoryModel.findOneAndUpdate(
+        { sessionId, email },
+        {
+            $set: { sessionStatus: status },
+            $currentDate: { updatedAt: true },
+        },
+        { 
+            runValidators: true,
+            new: true
+        }
+    );
 };
 
 export default UserHistoryModel;

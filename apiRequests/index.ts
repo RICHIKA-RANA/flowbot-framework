@@ -204,6 +204,14 @@ export const updateConfig = async (chatbotId: string, type: string, content: str
 }
 
 // ─── Chat history ───────
+export const updateSessionStatus = async (sessionId: string, sessionStatus: string): Promise<HistorySessionSummary | null> => {
+    try {
+        const { data } = await axios.patch(`/api/history/sessions`, {sessionId, sessionStatus } )
+        return data
+    } catch (error) {
+        return null
+    }
+}
 
 export const listHistorySessions = async (): Promise<HistorySessionSummary[]> => {
     try {

@@ -20,7 +20,7 @@ const FeedbackForm = ({ onSubmit }: FeedbackFormProps) => {
     return (
         <div className="w-[500px] flex flex-col gap-4">
             <p className="text-gray-600">
-                We'd love to hear your feedback to improve the chatbot experience.
+                We would love to hear your feedback to improve the chatbot experience.
             </p>
 
             {/* Rating */}

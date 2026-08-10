@@ -14,8 +14,9 @@ import { Menu } from 'lucide-react';
 import CustomModal from '@/components/ui/customModal';
 import FeedbackForm from '@/components/FeedbackForm';
 import { FeedbackPayload } from '@/types/feedback';
+import ChatTabs from './ChatTabs';
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, sessions, setSessions, activeSessionId, onSelectSession, onNewChat }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
@@ -35,6 +36,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
         const hasUserMessage = messages?.some((msg) => msg.type === "userMessage") || false;
         const hasBotMessage = messages?.some((msg) => msg.type === "apiMessage") || false;
 
+
         setCanShareChat(hasUserMessage && hasBotMessage);
     }, [messages, messages?.length]);
 
@@ -43,6 +45,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
             await navigator.clipboard.writeText(text);
             return;
         }
+
 
         // to support older browsers, where the clipboard api might not be available;
         const textarea = document.createElement("textarea");
@@ -139,7 +142,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
     }
 
     return (
-        <div className={styles?.['main-header']}>
+        <div className="flex justify-between w-full items-center border border-b border-gray-200 bg-white px-4 py-2 gap-1">
             {
                 feedbackModalOpen && (
                     <CustomModal
@@ -155,47 +158,65 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
                     </CustomModal>
                 )
             }
-            <div className={styles?.['header-left']}>
+            <div className="flex flex-1 min-w-0 items-center gap-4 overflow-hidden">
                 <button
-                    className={styles?.['header-toggle-btn']}
-                    //   onClick={}
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
                     title="Toggle Sidebar"
                 >
-                    <PanelIcon size={20} stroke={drawerOpen ? '#2563eb' : '#6b7280'} />
+                    <PanelIcon size={20} stroke={"#6b7280"} />
                 </button>
-                <span className={styles?.['header-title']}>AI Document Chat</span>
+
+                <span className="flex-shrink-0 text-base font-semibold text-gray-900">
+                    {JSModule?.botName || "AI Document Chat"}
+                </span>
+                <ChatTabs
+                    messages={messages}
+                    sessions={sessions || []}
+                    setSessions={setSessions}
+                    activeSessionId={activeSessionId}
+                    onSelectSession={onSelectSession}
+                    onNewChat={onNewChat}
+                />
             </div>
 
-            <div className={styles?.['header-right']}>
+            <div className="flex items-center gap-4">
                 {canShareChat && (
-                    <div onClick={handleShareChat}>
+                    <div onClick={handleShareChat} className="cursor-pointer">
                         <ShareIcon />
                     </div>
                 )}
                 <button
-                    className={styles?.['header-toggle-btn']}
+                    className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
                     onClick={onDrawerToggle}
                     title="Toggle Documents"
                 >
-                    <PanelIcon size={20} stroke={drawerOpen ? '#2563eb' : '#6b7280'} />
+                    <PanelIcon size={20} stroke={drawerOpen ? "#2563eb" : "#6b7280"} />
                 </button>
-                <div className={styles["header-user-wrap"]} ref={userMenuRef}>
+
+                <div className="relative" ref={userMenuRef}>
                     <div
-                        className={styles["header-user-pill"]}
+                        className="flex cursor-pointer select-none items-center gap-2 rounded-full border border-gray-200 px-2 py-1 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 overflow-visible"
                         onClick={() => setIsUserMenuOpen((prev) => !prev)}
                     >
-                        <div className={styles?.['header-user-avatar']}>{user.name?.charAt(0).toUpperCase() || "U"}</div>
-                        <div className={styles?.['header-user-meta']}>
-                            <span className={styles?.['header-user-name']}>{user.name || "User"}</span>
-                            <span className={styles?.['header-user-email']}>{user.email || ""}</span>
+                        <div className="h-8 w-8 flex justify-center items-center text-center rounded-full text-sm font-semibold text-black border border-black bg-white">
+                            {user?.name?.charAt(0).toUpperCase() || "U"}
+                        </div>
+
+                        <div className="flex flex-col text-left leading-[1.2]">
+                            <span className="text-sm font-medium text-gray-700">
+                                {user.name || "User"}
+                            </span>
+                            <span className="text-xs font-normal text-gray-400">
+                                {user.email || ""}
+                            </span>
                         </div>
                         <ChevronDownIcon />
                     </div>
 
                     {isUserMenuOpen && (
-                        <div className={styles["header-dropdown"]}>
+                        <div className="absolute right-0 top-14 z-[200] min-w-44 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 ">
                             <button
-                                className={`${styles["header-dropdown-item"]} ${styles["danger"]}`}
+                                className="flex w-full items-center gap-2 bg-transparent px-4 py-2.5 text-left text-sm text-red-500 transition-colors duration-150 hover:bg-gray-50"
                                 onClick={handleLogout}
                             >
                                 <LogoutIcon />
@@ -206,20 +227,22 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
                 </div>
                 <div
                     ref={menuRef}
-                    className={styles["header-menu-wrapper"]}
+                    className='relative block'
                 >
                     <button
-                        className={styles["header-menu-btn"]}
+                        className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
                         onClick={() => setShowMenu((prev) => !prev)}
                         title="Header Menu"
                     >
                         <Menu size={24} stroke={showMenu ? '#2563eb' : '#6b7280'} />
                     </button>
-
+ 
                     {showMenu && (
-                        <div className={styles["header-menu-dropdown"]}>
+                        <div
+                            className="absolute block right-0 top-14 z-[200] overflow-hidden rounded-lg border border-gray-200 bg-white py-1"
+                        >
                             <button
-                                className={styles["header-menu-dropdown-item"]}
+                                className="flex items-center gap-2 whitespace-nowrap bg-transparent px-4 py-2.5 text-left text-sm transition-colors duration-150 hover:bg-gray-50"
                                 onClick={() => {
                                     setFeedbackModalOpen(true);
                                     setShowMenu(false);

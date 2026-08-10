@@ -113,7 +113,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.log(`[GET /api/history/sessions] user=${email} sessions=${response.length}`);
             console.log(JSON.stringify(response, null, 2));
 
-            return res.status(200).json({ sessions: response });
+            return res.status(200).json(response);
         } catch (err: any) {
             console.error('[GET /api/history/sessions] error:', err);
             return res.status(err.status || 500).json({ error: err.message || 'Something went wrong' });

@@ -6,18 +6,25 @@ import LogoutIcon from '@/assets/svgs/LogoutIcon';
 import ShareIcon from '@/assets/svgs/ShareIcon';
 import { ManageProjectsButton } from '@/modules/ManageProjectsPanel';
 import { useChatbot } from '@/hooks/useChatbot';
-import { ToastContainer, toast } from 'react-toastify';
-import { getPublicChatLink } from '@/apiRequests';
+import { toast } from 'react-toastify';
+import { getPublicChatLink, submitFeedback } from '@/apiRequests';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
 import config from '@/config/constants';
 import { ChatHeaderProps } from '@/types/chat';
+import { Menu } from 'lucide-react';
+import CustomModal from '@/components/ui/customModal';
+import FeedbackForm from '@/components/FeedbackForm';
+import { FeedbackPayload } from '@/types/feedback';
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, manageProjectsOpen = false, onToggleManageProjects }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [canShareChat, setCanShareChat] = useState(false);
+    const [showMenu, setShowMenu] = useState(false);
+    const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
     const [user, setUser] = useState<{
         name?: string;
         email?: string;
@@ -28,7 +35,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
     useEffect(() => {
         const hasUserMessage = messages?.some((msg) => msg.type === "userMessage") || false;
         const hasBotMessage = messages?.some((msg) => msg.type === "apiMessage") || false;
-    
+
         setCanShareChat(hasUserMessage && hasBotMessage);
     }, [messages, messages?.length]);
 
@@ -37,7 +44,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
             await navigator.clipboard.writeText(text);
             return;
         }
-        
+
         // to support older browsers, where the clipboard api might not be available;
         const textarea = document.createElement("textarea");
         textarea.value = text;
@@ -63,13 +70,37 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
         }
     }
 
+    const handleFeedback = async (action?: string, feedback?: FeedbackPayload) => {
+        if (action === "close modal" || !feedback) {
+            setFeedbackModalOpen(false);
+            return;
+        }
+
+        const response = await submitFeedback(feedback);
+        if (response?.status === 201) {
+            // closing the modal only if the feedback is successfully submitted
+            // if  anything goes wrong, modal would stay as opened - user can chose to close or retry
+            setFeedbackModalOpen(false);
+            toast.success("Thanks for your feedback")
+        } else {
+            toast.error("Sorry, something went wrong in submitting feedback")
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Node;
             if (
                 userMenuRef.current &&
-                !userMenuRef.current.contains(event.target as Node)
+                !userMenuRef.current.contains(target)
             ) {
                 setIsUserMenuOpen(false);
+            }
+            if (
+                menuRef.current &&
+                !menuRef.current.contains(target)
+            ) {
+                setShowMenu(false);
             }
         };
 
@@ -110,6 +141,21 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
     return (
         <div className={styles?.['main-header']}>
+            {
+                feedbackModalOpen && (
+                    <CustomModal
+                        id={"feedback"}
+                        title={"Feedback"}
+                        onClose={handleFeedback}
+                        status={feedbackModalOpen}
+                        showOptionsButton={false}
+                    >
+                        <FeedbackForm
+                            onSubmit={handleFeedback}
+                        />
+                    </CustomModal>
+                )
+            }
             <div className={styles?.['header-left']}>
                 <button
                     className={styles?.['header-toggle-btn']}
@@ -122,7 +168,6 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
             </div>
 
             <div className={styles?.['header-right']}>
-                <ToastContainer />
                 {onToggleManageProjects && (
                     <ManageProjectsButton
                         open={manageProjectsOpen}
@@ -162,6 +207,32 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
                             >
                                 <LogoutIcon />
                                 Sign out
+                            </button>
+                        </div>
+                    )}
+                </div>
+                <div
+                    ref={menuRef}
+                    className={styles["header-menu-wrapper"]}
+                >
+                    <button
+                        className={styles["header-menu-btn"]}
+                        onClick={() => setShowMenu((prev) => !prev)}
+                        title="Header Menu"
+                    >
+                        <Menu size={24} stroke={showMenu ? '#2563eb' : '#6b7280'} />
+                    </button>
+
+                    {showMenu && (
+                        <div className={styles["header-menu-dropdown"]}>
+                            <button
+                                className={styles["header-menu-dropdown-item"]}
+                                onClick={() => {
+                                    setFeedbackModalOpen(true);
+                                    setShowMenu(false);
+                                }}
+                            >
+                                Share Feedback
                             </button>
                         </div>
                     )}

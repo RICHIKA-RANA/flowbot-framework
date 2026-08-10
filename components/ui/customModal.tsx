@@ -18,9 +18,9 @@ const CustomModal = (
       {status && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
           <div className="bg-white p-8 rounded-lg shadow-lg">
-            <div className='flex justify-between gap-6 items-center mb-4'>
-              <h2 className="text-xl font-bold">{title}</h2>
-              <div className='cursor-pointer' onClick={() => onClose("close modal")}><CrossIcon /></div>
+            <div className='relative flex justify-center gap-4 items-center'>
+              <h2 className="text-xl font-bold mb-4">{title}</h2>
+              <div className='absolute right-0 top-0 cursor-pointer' onClick={() => onClose("close modal")}><CrossIcon /></div>
             </div>
             <>
             {children}

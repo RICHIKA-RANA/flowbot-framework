@@ -32,3 +32,31 @@ export const formatRelativeTime = (isoTimestamp?: string | null): string => {
     }
     return 'just now';
 };
+
+const AVATAR_COLORS = ['#2563eb', '#7c3aed', '#db2777', '#ea580c', '#0d9488', '#4f46e5'];
+const AVATAR_SIZE = 128;
+
+export const generateDefaultLogo = (name: string): string => {
+    if (typeof document === 'undefined') return '';
+    const trimmed = name.trim();
+    if (!trimmed) return '';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = AVATAR_SIZE;
+    canvas.height = AVATAR_SIZE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+
+    const hash = [...trimmed].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    ctx.fillStyle = AVATAR_COLORS[hash % AVATAR_COLORS.length];
+    ctx.fillRect(0, 0, AVATAR_SIZE, AVATAR_SIZE);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${AVATAR_SIZE / 2.3}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const initials = [...trimmed].slice(0, 2).join('').toUpperCase();
+    ctx.fillText(initials, AVATAR_SIZE / 2, AVATAR_SIZE / 2);
+
+    return canvas.toDataURL('image/png');
+};

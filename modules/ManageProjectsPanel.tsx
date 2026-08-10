@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   ArrowLeftRight,
   ChevronUp,
@@ -22,7 +28,7 @@ import {
   setActiveProjectId as persistActiveProjectId,
   SESSION_CHANGED_EVENT,
 } from '@/utils/sessionJobs';
-import { formatRelativeTime } from '@/utils/formatBytes';
+import { formatRelativeTime, generateDefaultLogo } from '@/utils/formatBytes';
 import {
   ManageProjectsButtonProps,
   ManageProjectsDrawerProps,
@@ -40,10 +46,7 @@ const CTA_DIVIDER = 'border-t border-gray-200';
 const CTA_GROUP = '-m-[14px] flex flex-col';
 const FIELD = 'w-full rounded-lg border border-gray-200 px-2.5 py-2 text-[13px] outline-none focus:border-blue-500';
 
-// The service names project-level failures itself — "You already have a project
-// named: x", "name is required", "logo must be a base64 data URI" — so show that
-// verbatim instead of restating it here and drifting from it. `detail` arrives as
-// a plain string or as { error_code, message }; anything else gets the fallback.
+// `detail` is either a string or { error_code, message }
 const projectErrorMessage = (detail: unknown, fallback: string): string => {
   if (typeof detail === 'string' && detail) return detail;
   const message = (detail as { message?: unknown })?.message;
@@ -130,8 +133,6 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [hasMore, setHasMore] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string>('');
-  // The page that failed, so Retry re-fetches it instead of restarting at 0 and
-  // throwing away the pages already loaded.
   const [retryOffset, setRetryOffset] = useState<number>(0);
   const [activeProjectId, setActiveProjectId] = useState<string>('');
   const [creating, setCreating] = useState<boolean>(false);
@@ -140,6 +141,7 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
   const [showAll, setShowAll] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
   const [logoDataUri, setLogoDataUri] = useState<string>('');
+  const [useDefaultLogo, setUseDefaultLogo] = useState<boolean>(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   const requestRef = useRef<number>(0);
@@ -155,7 +157,6 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
     setLoading(false);
     setLoadingMore(false);
     if (!data) {
-      // Set for a failed "Load more" too — that used to fail silently.
       setLoadError('Could not load projects. Please try again.');
       setRetryOffset(offset);
       return;
@@ -176,11 +177,7 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
     loadPage(0);
   }, [open, reloadToken, loadPage]);
 
-  // sessionStorage still scopes uploads after a reload, so mirror it back into
-  // the highlight — otherwise nothing looks selected while uploads keep
-  // landing in that project. Effect, not lazy init: no sessionStorage on SSR.
-  // Re-read on SESSION_CHANGED_EVENT too: New Chat clears the active project,
-  // and the highlight would otherwise keep pointing at the cleared one.
+  // mirror sessionStorage into the highlight; New Chat clears it
   useEffect(() => {
     const syncActiveProject = () => setActiveProjectId(getActiveProjectId());
     syncActiveProject();
@@ -198,6 +195,7 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
   const openCreateModal = () => {
     setName('');
     setLogoDataUri('');
+    setUseDefaultLogo(false);
     setCreateError('');
     setCreating(true);
   };
@@ -223,20 +221,28 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
 
     try {
       setLogoDataUri(await readAsDataUri(file));
+      setUseDefaultLogo(false);
       setCreateError('');
     } catch {
       setCreateError('Could not read the selected image');
     }
   };
 
-  const hasLogo = !!logoDataUri;
+  // recomputed so editing the name updates the initials
+  const defaultLogo = useMemo(
+    () => (useDefaultLogo ? generateDefaultLogo(name) : ''),
+    [useDefaultLogo, name],
+  );
+  const logoToSend = logoDataUri || defaultLogo;
+
+  const hasLogo = !!logoToSend;
   const canSubmit = !!name.trim() && hasLogo && !submitting;
 
   const handleCreate = async () => {
     if (!canSubmit) return;
 
     setSubmitting(true);
-    const result = await createProject(name.trim(), logoDataUri);
+    const result = await createProject(name.trim(), logoToSend);
     setSubmitting(false);
 
     if (!result.ok) {
@@ -291,9 +297,7 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
     if (loading && !projects.length) {
       return <div className={EMPTY_STATE}>Loading projects…</div>;
     }
-    // Only take over the panel when there is nothing else to show. A refresh
-    // that fails while a good list is on screen gets the banner below instead,
-    // so we never replace real projects with an error.
+    // with a list on screen the banner below is used instead
     if (loadError && !projects.length) {
       return (
         <div className={`${EMPTY_STATE} text-red-600`}>
@@ -416,18 +420,20 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
               <>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={logoDataUri}
+                  src={logoToSend}
                   alt=""
                   width={20}
                   height={20}
                   className="h-5 w-5 rounded object-cover"
                 />
-                Logo selected — change
+                {defaultLogo
+                  ? 'Default logo - or choose your own'
+                  : 'Logo selected - change'}
               </>
             ) : (
               <>
                 <ImagePlus size={16} className="text-blue-500" />
-                Choose a logo (required)
+                Choose a logo
               </>
             )}
           </button>
@@ -438,6 +444,26 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
             onChange={handleLogoChange}
             className="hidden"
           />
+
+          <label
+            className={`flex select-none items-center gap-2 self-start text-[12px] ${
+              name.trim()
+                ? 'cursor-pointer text-gray-600'
+                : 'cursor-not-allowed text-gray-400'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={useDefaultLogo}
+              disabled={!name.trim()}
+              onChange={(e) => {
+                setUseDefaultLogo(e.target.checked);
+                if (e.target.checked) setLogoDataUri('');
+              }}
+              className="h-3.5 w-3.5 accent-blue-600"
+            />
+            Use default logo from the project name
+          </label>
 
           {createError && (
             <div className="text-xs text-red-600">{createError}</div>

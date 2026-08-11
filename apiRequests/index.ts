@@ -216,7 +216,7 @@ export const updateSessionStatus = async (sessionId: string, sessionStatus: stri
 export const listHistorySessions = async (): Promise<HistorySessionSummary[]> => {
     try {
         const { data } = await axios.get(`/api/history/sessions`)
-        return Array.isArray(data?.sessions) ? data.sessions : []
+        return Array.isArray(data) ? data : []
     } catch (error) {
         return []
     }

@@ -65,6 +65,7 @@ export const useChatbot = () => {
 
     // --- Public/private document namespace switch ---
     const [graphIdsVersion, setGraphIdsVersion] = useState(0);
+    const [selectedGraphIds, setSelectedGraphIds] = useState<string[]>([]);
     const [cachedGraphIds, setCachedGraphIds] = useState<string[]>([]);
     const [hasPrivateDocs, setHasPrivateDocs] = useState(false);
     const [publicDocs, setPublicDocs] = useState<PublicDocument[]>([]);
@@ -468,7 +469,7 @@ export const useChatbot = () => {
             setQuery('');
             try {
                 // private mode -> session graph ids; public mode -> active demo doc graph
-                const graphIds = resolveGraphIds()
+                const allGraphIds = resolveGraphIds()
                 let access_token = localStorage.getItem('access_token');
                 const conversation_id = localStorage.getItem('conversation_id')
                 const currentSessionId = getCurrentSessionId()
@@ -483,7 +484,8 @@ export const useChatbot = () => {
                         body: JSON.stringify({
                             conversation_id,
                             question,
-                            graphIds,
+                            // if no document have selected, senting all the available;
+                            graphIds: selectedGraphIds.length? selectedGraphIds: allGraphIds,
                             history,
                             session: currentSessionId,
                             reqQuery: router.query,
@@ -841,5 +843,7 @@ export const useChatbot = () => {
         namespace,
         currentSession,
         startNewChat,
+        selectedGraphIds,
+        setSelectedGraphIds
     };
 };

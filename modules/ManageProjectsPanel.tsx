@@ -6,9 +6,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  ArrowLeftRight,
-  ChevronUp,
-  ChevronDown,
   ChevronRight,
   ArrowRight,
   ArrowLeft,
@@ -18,6 +15,7 @@ import {
   Folder,
 } from 'lucide-react';
 import { CustomModal, Drawer } from '@/components/ui';
+import { Avatar } from '@/components/ui/Avatar/Avatar';
 import {
   createProject,
   fetchProjectLogoObjectUrl,
@@ -29,11 +27,7 @@ import {
   SESSION_CHANGED_EVENT,
 } from '@/utils/sessionJobs';
 import { formatRelativeTime, generateDefaultLogo } from '@/utils/formatBytes';
-import {
-  ManageProjectsButtonProps,
-  ManageProjectsDrawerProps,
-  Project,
-} from '@/types/project';
+import { ManageProjectsDrawerProps, Project } from '@/types/project';
 
 
 const MAX_LOGO_BYTES = 1_000_000;
@@ -60,68 +54,6 @@ const readAsDataUri = (file: File): Promise<string> =>
     reader.onerror = () => reject(new Error('Could not read the selected image'));
     reader.readAsDataURL(file);
   });
-
-export function ManageProjectsButton({
-  open,
-  onToggle,
-}: ManageProjectsButtonProps) {
-  return (
-  <button
-    onClick={onToggle}
-    aria-expanded={open}
-    className={`flex items-center gap-2 rounded-lg border bg-white px-3.5 py-2 text-sm font-semibold text-gray-900 ${
-      open ? 'border-blue-500' : 'border-gray-200'
-    }`}
-  >
-    <ArrowLeftRight size={16} className="text-blue-500" />
-    Manage Projects
-    {open ? (
-      <ChevronUp size={16} className="text-gray-500" />
-    ) : (
-      <ChevronDown size={16} className="text-gray-500" />
-    )}
-  </button>
-  );
-}
-const logoCache = new Map<string, string>();
-
-function ProjectLogo({ project }: { project: Project }) {
-  const [logoUrl, setLogoUrl] = useState<string>(
-    () => logoCache.get(project.project_id) || '',
-  );
-
-  useEffect(() => {
-    if (!project.logo_url || logoCache.has(project.project_id)) return;
-    let cancelled = false;
-
-    fetchProjectLogoObjectUrl(project.project_id).then((url) => {
-      if (!url) return;
-      logoCache.set(project.project_id, url);
-      if (!cancelled) setLogoUrl(url);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [project.project_id, project.logo_url]);
-
-  return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-blue-50 text-blue-500">
-      {logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoUrl}
-          alt=""
-          width={36}
-          height={36}
-          className="h-full w-full object-cover"
-        />
-      ) : (
-        <Building2 size={18} />
-      )}
-    </div>
-  );
-}
 
 export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
   open,
@@ -272,7 +204,12 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
             : 'border-gray-200 bg-white hover:bg-gray-50'
         }`}
       >
-        <ProjectLogo project={project} />
+        <Avatar
+          id={project.project_id}
+          hasImage={!!project.logo_url}
+          fetchImage={fetchProjectLogoObjectUrl}
+          fallback={<Building2 size={18} />}
+        />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-gray-900">
             {project.name}

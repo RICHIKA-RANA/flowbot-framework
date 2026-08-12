@@ -6,11 +6,6 @@ export interface Project {
   last_interaction_at?: string | null;
 }
 
-export interface ManageProjectsButtonProps {
-  open: boolean;
-  onToggle: () => void;
-}
-
 export interface ManageProjectsDrawerProps {
   open: boolean;
   onClose: () => void;

@@ -51,3 +51,17 @@ export interface DrawerProps {
   footer?: React.ReactNode;
   children: React.ReactNode;
 }
+
+export interface AvatarProps {
+  id: string;
+  hasImage?: boolean;
+  fetchImage: (id: string) => Promise<string | null | false>;
+  fallback?: React.ReactNode;
+}
+
+export interface ToggleButtonProps {
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+  icon?: React.ReactNode;
+}

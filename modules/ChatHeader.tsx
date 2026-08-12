@@ -4,14 +4,14 @@ import PanelIcon from '@/assets/svgs/PanelIcon';
 import ChevronDownIcon from '@/assets/svgs/ChevronDownIcon';
 import LogoutIcon from '@/assets/svgs/LogoutIcon';
 import ShareIcon from '@/assets/svgs/ShareIcon';
-import { ManageProjectsButton } from '@/modules/ManageProjectsPanel';
+import { ToggleButton } from '@/components/ui/Buttons/ToggleButton';
 import { useChatbot } from '@/hooks/useChatbot';
 import { toast } from 'react-toastify';
 import { getPublicChatLink, submitFeedback } from '@/apiRequests';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
 import config from '@/config/constants';
 import { ChatHeaderProps } from '@/types/chat';
-import { Menu } from 'lucide-react';
+import { Menu, ArrowLeftRight } from 'lucide-react';
 import CustomModal from '@/components/ui/customModal';
 import FeedbackForm from '@/components/FeedbackForm';
 import { FeedbackPayload } from '@/types/feedback';
@@ -182,9 +182,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
             <div className="flex items-center gap-4">
                 {onToggleManageProjects && (
-                    <ManageProjectsButton
+                    <ToggleButton
                         open={manageProjectsOpen}
                         onToggle={onToggleManageProjects}
+                        label="Manage Projects"
+                        icon={<ArrowLeftRight size={16} className="text-blue-500" />}
                     />
                 )}
                 {canShareChat && (

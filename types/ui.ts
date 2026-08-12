@@ -39,3 +39,29 @@ export interface PdfViewerProps {
   onToggleExpand?: () => void;
   onClose?: () => void;
 }
+
+export interface DrawerProps {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  subtitle?: string;
+  width?: number;
+  resizable?: boolean;
+  className?: string;
+  footer?: React.ReactNode;
+  children: React.ReactNode;
+}
+
+export interface AvatarProps {
+  id: string;
+  hasImage?: boolean;
+  fetchImage: (id: string) => Promise<string | null | false>;
+  fallback?: React.ReactNode;
+}
+
+export interface ToggleButtonProps {
+  open: boolean;
+  onToggle: () => void;
+  label: string;
+  icon?: React.ReactNode;
+}

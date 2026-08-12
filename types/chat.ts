@@ -47,6 +47,8 @@ export interface ChatHeaderProps {
   drawerOpen?: boolean;
   onDrawerToggle?: () => void;
   messages?: Message[]
+  manageProjectsOpen?: boolean
+  onToggleManageProjects?: () => void
   sessions?: HistorySessionSummary[];
   setSessions?: Dispatch<SetStateAction<HistorySessionSummary[]>>;
   activeSessionId?: string | null;

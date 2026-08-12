@@ -2,6 +2,7 @@ import { listSessionDocuments } from '@/apiRequests/ttt';
 
 const SESSION_ID_KEY = 'currentSessionId';
 const JOB_SESSION_KEY = 'jobSessionId';
+const ACTIVE_PROJECT_KEY = 'activeProjectId';
 
 export const GRAPH_IDS_CHANGED_EVENT = 'graphids-changed';
 export const SESSION_CHANGED_EVENT = 'session-changed';
@@ -44,6 +45,22 @@ export const resetJobSessionId = (): void => {
     const jobSessionId = crypto.randomUUID();
     sessionStorage.setItem(JOB_SESSION_KEY, jobSessionId);
     window.dispatchEvent(new Event(SESSION_CHANGED_EVENT));
+};
+
+// ─── Active projects ───────────────────────────────────────────────────────
+export const setActiveProjectId = (projectId: string): void => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.setItem(ACTIVE_PROJECT_KEY, projectId);
+};
+
+export const getActiveProjectId = (): string => {
+    if (typeof window === 'undefined') return '';
+    return sessionStorage.getItem(ACTIVE_PROJECT_KEY) || '';
+};
+
+export const clearActiveProjectId = (): void => {
+    if (typeof window === 'undefined') return;
+    sessionStorage.removeItem(ACTIVE_PROJECT_KEY);
 };
 
 // ─── Graph IDs ────────────────────────────────────────────────────────────

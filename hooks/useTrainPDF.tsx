@@ -4,7 +4,7 @@ import ThemeContext from '@/contexts/ThemeContext';
 import { useRouter } from 'next/router';
 import { usePolling } from '@/hooks/usePolling';
 import { FileUploadStatus, SessionDocument } from '@/types/fileUploadStatus';
-import { getCurrentSessionId, getJobSessionId, notifyGraphIdsChanged, SESSION_CHANGED_EVENT } from '@/utils/sessionJobs';
+import { getActiveProjectId, getCurrentSessionId, getJobSessionId, notifyGraphIdsChanged, SESSION_CHANGED_EVENT } from '@/utils/sessionJobs';
 import { toast } from 'react-toastify';
 
 /**
@@ -238,6 +238,7 @@ export const useTainPDF = () => {
     };
 
     const addFile = async (file: File) => {
+        const projectId = getActiveProjectId();
         const entry: FileUploadStatus = {
             name: file.name,
             size: file.size,
@@ -253,7 +254,8 @@ export const useTainPDF = () => {
         try {
             const jobSessionId = jobSessionIdRef.current || getJobSessionId();
             jobSessionIdRef.current = jobSessionId;
-            const res = await uploadDocument(file, jobSessionId);
+
+            const res = await uploadDocument(file, jobSessionId, projectId);
             if (!res?.job_id) throw new Error('upload failed');
             const { job_id } = res;
             setUploads((prev: FileUploadStatus[]) =>

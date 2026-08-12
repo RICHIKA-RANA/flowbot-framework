@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useChatbot } from '@/hooks/useChatbot';
 import { ChatHeader } from '@/modules/ChatHeader';
 import { SidePanel } from '@/modules/SideDrawer';
+import { ManageProjectsDrawer } from '@/modules/ManageProjectsPanel';
 import { ChatMessages } from '@/modules/ChatMessages';
 import { ChatInput } from '@/modules/ChatInput';
 import { Loader } from '@/components/ui';
@@ -14,7 +15,7 @@ import HistorySidebar from '@/modules/HistorySidebar';
 import PastConversation from '@/modules/PastConversation';
 import { HistorySessionSummary } from '@/types/history';
 import { listHistorySessions } from '@/apiRequests';
-import { getCurrentSessionId } from '@/utils/sessionJobs';
+import { GRAPH_IDS_CHANGED_EVENT, getCurrentSessionId } from '@/utils/sessionJobs';
 
 const Chatbot: React.FC = () => {
   const {
@@ -50,6 +51,16 @@ const Chatbot: React.FC = () => {
   const [hasPriorSessions, setHasPriorSessions] = useState(false);
   const [sessions, setSessions] = useState<HistorySessionSummary[]>([]);
   const handleSessionsCount = useCallback((n: number) => setHasPriorSessions(n > 0), []);
+  const [manageProjectsOpen, setManageProjectsOpen] = useState(false);
+  // bumped whenever indexing finishes so the drawer's counts and document
+  // lists reflect the upload without the user reopening it
+  const [projectsReloadToken, setProjectsReloadToken] = useState(0);
+
+  useEffect(() => {
+    const onDocumentsChanged = () => setProjectsReloadToken((t) => t + 1);
+    window.addEventListener(GRAPH_IDS_CHANGED_EVENT, onDocumentsChanged);
+    return () => window.removeEventListener(GRAPH_IDS_CHANGED_EVENT, onDocumentsChanged);
+  }, []);
 
   const handleSelectSession = (sessionId: string) => {
     setSelectedSessionId(sessionId === currentSession ? null : sessionId);
@@ -192,6 +203,8 @@ const Chatbot: React.FC = () => {
           drawerOpen={open}
           onDrawerToggle={() => setOpen(!open)}
           messages={messages}
+          manageProjectsOpen={manageProjectsOpen}
+          onToggleManageProjects={() => setManageProjectsOpen((v) => !v)}
           sessions={sessions}
           setSessions={setSessions}
           activeSessionId={selectedSessionId ?? currentSession}
@@ -338,6 +351,11 @@ const Chatbot: React.FC = () => {
               {JSModule?.drawerEnabled && !selectedSessionId && (
                 <SidePanel switchTab={switchTab} open={open} setOpen={setOpen} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} hideDemoDocs={hasPriorSessions} />
               )}
+              <ManageProjectsDrawer
+                open={manageProjectsOpen}
+                onClose={() => setManageProjectsOpen(false)}
+                reloadToken={projectsReloadToken}
+              />
             </div>
           </div>
         </div>

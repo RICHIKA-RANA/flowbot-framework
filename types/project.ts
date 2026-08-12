@@ -12,3 +12,16 @@ export interface ManageProjectsDrawerProps {
   /** Bump to force a reload — e.g. after an upload completes. */
   reloadToken?: number;
 }
+
+export interface ProjectListProps {
+  projects: Project[];
+  loading: boolean;
+  activeProjectId: string;
+  showAll: boolean;
+  hasMore: boolean;
+  loadingMore: boolean;
+  loadError: string;
+  onSelect: (project: Project) => void;
+  onRetry: () => void;
+  onLoadMore: () => void;
+}

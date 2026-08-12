@@ -6,35 +6,28 @@ import React, {
   useState,
 } from 'react';
 import {
-  ChevronRight,
   ArrowRight,
   ArrowLeft,
   Plus,
   ImagePlus,
-  Building2,
   Folder,
 } from 'lucide-react';
 import { CustomModal, Drawer } from '@/components/ui';
-import { Avatar } from '@/components/ui/Avatar/Avatar';
-import {
-  createProject,
-  fetchProjectLogoObjectUrl,
-  listProjectTree,
-} from '@/apiRequests/ttt';
+import { ProjectList } from '@/modules/ProjectList';
+import { createProject, listProjectTree } from '@/apiRequests/ttt';
 import {
   getActiveProjectId,
   setActiveProjectId as persistActiveProjectId,
   SESSION_CHANGED_EVENT,
 } from '@/utils/sessionJobs';
-import { formatRelativeTime, generateDefaultLogo } from '@/utils/formatBytes';
+import { generateDefaultLogo } from '@/utils/formatBytes';
+import { validateFile } from '@/utils/validation';
 import { ManageProjectsDrawerProps, Project } from '@/types/project';
 
 
 const MAX_LOGO_BYTES = 1_000_000;
-const RECENT_LIMIT = 3;
 const PAGE_SIZE = 20;
 
-const EMPTY_STATE = 'px-4 py-5 text-center text-[13px] text-gray-500';
 const CTA_BUTTON ='flex w-full items-center gap-3 px-4 py-3 text-[15px] font-semibold text-blue-600 hover:bg-gray-50';
 const CTA_DIVIDER = 'border-t border-gray-200';
 const CTA_GROUP = '-m-[14px] flex flex-col';
@@ -142,12 +135,14 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
     e.target.value = '';
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setCreateError('Choose an image file');
-      return;
-    }
-    if (file.size > MAX_LOGO_BYTES) {
-      setCreateError('Image must be under 1 MB');
+    const error = validateFile(file, {
+      typePrefix: 'image/',
+      maxBytes: MAX_LOGO_BYTES,
+      typeError: 'Choose an image file',
+      sizeError: 'Image must be under 1 MB',
+    });
+    if (error) {
+      setCreateError(error);
       return;
     }
 
@@ -192,106 +187,6 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
     await loadPage(0);
   };
 
-  const renderProjectRow = (project: Project) => {
-    const isActive = project.project_id === activeProjectId;
-    return (
-      <div
-        key={project.project_id}
-        onClick={() => handleSelect(project)}
-        className={`mb-2 flex cursor-pointer items-center gap-3 rounded-[10px] border p-3 ${
-          isActive
-            ? 'border-blue-500 bg-blue-50'
-            : 'border-gray-200 bg-white hover:bg-gray-50'
-        }`}
-      >
-        <Avatar
-          id={project.project_id}
-          hasImage={!!project.logo_url}
-          fetchImage={fetchProjectLogoObjectUrl}
-          fallback={<Building2 size={18} />}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold text-gray-900">
-            {project.name}
-          </div>
-          <div className="mt-0.5 text-xs text-gray-500">
-            {project.document_count}{' '}
-            {project.document_count === 1 ? 'document' : 'documents'}
-          </div>
-          <div className="text-[11px] text-gray-500">
-            Last updated {formatRelativeTime(project.last_interaction_at)}
-          </div>
-        </div>
-        <ChevronRight
-          size={18}
-          className={`shrink-0 ${isActive ? 'text-blue-500' : 'text-gray-500'}`}
-        />
-      </div>
-    );
-  };
-
-  const renderBody = () => {
-    if (loading && !projects.length) {
-      return <div className={EMPTY_STATE}>Loading projects…</div>;
-    }
-    // with a list on screen the banner below is used instead
-    if (loadError && !projects.length) {
-      return (
-        <div className={`${EMPTY_STATE} text-red-600`}>
-          {loadError}
-          <button
-            onClick={() => loadPage(retryOffset)}
-            className="mt-2 block w-full font-semibold text-blue-600"
-          >
-            Retry
-          </button>
-        </div>
-      );
-    }
-    if (!projects.length) {
-      return (
-        <div className={EMPTY_STATE}>
-          No projects yet. Create your first one below.
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {loadError && (
-          <div className="mx-0.5 mb-2 flex items-center justify-between gap-2 rounded-lg bg-red-50 px-2.5 py-2 text-[12px] text-red-600">
-            {loadError}
-            <button
-              onClick={() => loadPage(retryOffset)}
-              className="shrink-0 font-semibold text-blue-600"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        <div className="mx-0.5 mb-2 mt-1 text-[11px] font-bold uppercase tracking-[0.06em] text-gray-500">
-          {showAll
-            ?
-              `All projects (${projects.length}${hasMore ? '+' : ''})`
-            : 'Recent projects'}
-        </div>
-        {(showAll ? projects : projects.slice(0, RECENT_LIMIT)).map(
-          renderProjectRow,
-        )}
-        {showAll && hasMore && (
-          <button
-            onClick={() => loadPage(projects.length)}
-            disabled={loadingMore}
-            className="mx-0.5 mt-1 w-full rounded-lg py-2 text-[13px] font-semibold text-blue-600 hover:bg-gray-50 disabled:text-gray-400"
-          >
-            {loadingMore ? 'Loading…' : 'Load more'}
-          </button>
-        )}
-        <div className="-mx-3 mt-1 border-t border-gray-200" />
-      </>
-    );
-  };
-
   return (
     <>
       <Drawer
@@ -324,7 +219,18 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
           </div>
         }
       >
-        {renderBody()}
+        <ProjectList
+          projects={projects}
+          loading={loading}
+          activeProjectId={activeProjectId}
+          showAll={showAll}
+          hasMore={hasMore}
+          loadingMore={loadingMore}
+          loadError={loadError}
+          onSelect={handleSelect}
+          onRetry={() => loadPage(retryOffset)}
+          onLoadMore={() => loadPage(projects.length)}
+        />
       </Drawer>
 
       <CustomModal

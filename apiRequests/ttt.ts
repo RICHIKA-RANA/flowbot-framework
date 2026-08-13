@@ -180,6 +180,24 @@ export const createProject = async (name: string, logoDataUri: string) => {
     }
 }
 
+export const renameProject = async (projectId: string, name: string) => {
+    try {
+        const response = await axiosTTTInstance.patch(`/v1/projects/${encodeURIComponent(projectId)}`, { name });
+        return { ok: true, project: response?.data };
+    } catch (error: any) {
+        console.log(`something went wrong while renaming project`, {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        return {
+            ok: false,
+            status: error?.response?.status,
+            detail: error?.response?.data?.detail,
+        };
+    }
+}
+
 export const fetchProjectLogoObjectUrl = async (projectId: string) => {
     try {
         const response = await axiosTTTInstance.get(`/v1/projects/${encodeURIComponent(projectId)}/logo`, {

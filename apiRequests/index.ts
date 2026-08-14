@@ -1,8 +1,9 @@
+import axios from 'axios';
 import { ChatbotsResponse, LiveChatbot } from "@/types/chat";
 import { FeedbackPayload } from "@/types/feedback";
 import { HistorySessionSummary, HistorySessionDetail } from "@/types/history";
 import { axiosPDFInstance, axiosConvInstance } from "@/utils/axiosInstance"
-import axios from 'axios';
+import { IFeedback } from "@/models/feedback";
 
 type CHAT_ID = string | string[] | undefined
 
@@ -276,10 +277,10 @@ export const submitFeedback = async (feedback: FeedbackPayload) => {
     }
 }
 
-export const getAllFeedbacks = async () => {
+export const getAllFeedbacks = async (): Promise<IFeedback[] | null> => {
     try {
         const response = await axios.get(`/api/feedback`);
-        return response;
+        return response.data as IFeedback[];
     } catch (error) {
         return null
     }

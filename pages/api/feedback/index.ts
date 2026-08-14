@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createFeedback, getFeedbacks } from '@/models/feedback';
 import { getVerifiedEmail } from '@/utils/auth';
+import { isAdmin } from '@/utils/adminAuth';
 import { FeedbackPayload } from '@/types/feedback';
 
 export default async function handler(
@@ -36,10 +37,18 @@ export default async function handler(
             )
 
             return res.status(201).json(feedback);
-        } else if (req.method === 'GET') {
-            // TODO: uncomment the following line and send the feedbacks as the res.json, once feedback listing functionality is there.
-            // const feedbacks = await getFeedbacks()
-            return res.status(200).json({});
+        }
+
+        if (req.method === 'GET') {
+            const email = getVerifiedEmail(req);
+            if (!isAdmin(email)) {
+                return res.status(403).json({
+                    error: 'Forbidden',
+                });
+            }
+
+            const feedbacks = await getFeedbacks();
+            return res.status(200).json(feedbacks);
         }
 
         res.setHeader('Allow', ['GET', 'POST']);

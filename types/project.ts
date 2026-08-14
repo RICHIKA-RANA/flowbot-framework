@@ -24,4 +24,5 @@ export interface ProjectListProps {
   onSelect: (project: Project) => void;
   onRetry: () => void;
   onLoadMore: () => void;
+  onRename: (project: Project, name: string) => Promise<string | null>;
 }

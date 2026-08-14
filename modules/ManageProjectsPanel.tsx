@@ -12,9 +12,10 @@ import {
   ImagePlus,
   Folder,
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { CustomModal, Drawer } from '@/components/ui';
 import { ProjectList } from '@/modules/ProjectList';
-import { createProject, listProjectTree } from '@/apiRequests/ttt';
+import { createProject, listProjectTree, renameProject } from '@/apiRequests/ttt';
 import {
   getActiveProjectId,
   setActiveProjectId as persistActiveProjectId,
@@ -115,6 +116,29 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
     setActiveProjectId(project.project_id);
     // persisted so every upload path files its document under this project
     persistActiveProjectId(project.project_id);
+  };
+
+  const handleRename = async (
+    project: Project,
+    name: string,
+  ): Promise<string | null> => {
+    const result = await renameProject(project.project_id, name);
+    if (!result.ok) {
+      const message = projectErrorMessage(
+        result.detail,
+        'Could not rename the project. Please try again.',
+      );
+      toast.error(message);
+      // also returned so ProjectList shows it inline and keeps edit mode open
+      return message;
+    }
+    setProjects((prev) =>
+      prev.map((p) =>
+        p.project_id === project.project_id ? { ...p, name } : p,
+      ),
+    );
+    toast.success('Project renamed');
+    return null;
   };
 
   const openCreateModal = () => {
@@ -230,6 +254,7 @@ export const ManageProjectsDrawer: React.FC<ManageProjectsDrawerProps> = ({
           onSelect={handleSelect}
           onRetry={() => loadPage(retryOffset)}
           onLoadMore={() => loadPage(projects.length)}
+          onRename={handleRename}
         />
       </Drawer>
 

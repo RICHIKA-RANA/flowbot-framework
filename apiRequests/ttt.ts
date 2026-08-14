@@ -182,7 +182,7 @@ export const createProject = async (name: string, logoDataUri: string) => {
 
 export const renameProject = async (projectId: string, name: string) => {
     try {
-        const response = await axiosTTTInstance.patch(`/v1/projects/${encodeURIComponent(projectId)}`, { name });
+        const response = await axiosTTTInstance.patch(`/v1/projects/${encodeURIComponent(projectId)}`, { name }, { timeout: 10000 });
         return { ok: true, project: response?.data };
     } catch (error: any) {
         console.log(`something went wrong while renaming project`, {

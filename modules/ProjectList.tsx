@@ -47,7 +47,10 @@ export function ProjectList({
     // error surfaces as a toast from the parent; keep edit mode open on failure
     const error = await onRename(project, name);
     setSaving(false);
-    if (!error) cancelRename();
+    if (!error) {
+      setEditingId((cur) => (cur === project.project_id ? '' : cur));
+      setDraft((cur) => (cur === name ? '' : cur));
+    }
   };
 
   const renderRow = (project: Project) => {
@@ -106,7 +109,7 @@ export function ProjectList({
           <div className="flex shrink-0 items-center gap-1 self-start">
             <button
               aria-label="Save name"
-              disabled={saving}
+              disabled={saving || !draft.trim()}
               onClick={(e) => {
                 e.stopPropagation();
                 commitRename(project);

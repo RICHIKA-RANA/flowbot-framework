@@ -4,19 +4,20 @@ import PanelIcon from '@/assets/svgs/PanelIcon';
 import ChevronDownIcon from '@/assets/svgs/ChevronDownIcon';
 import LogoutIcon from '@/assets/svgs/LogoutIcon';
 import ShareIcon from '@/assets/svgs/ShareIcon';
+import { ToggleButton } from '@/components/ui/Buttons/ToggleButton';
 import { useChatbot } from '@/hooks/useChatbot';
 import { toast } from 'react-toastify';
 import { getPublicChatLink, submitFeedback } from '@/apiRequests';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
 import config from '@/config/constants';
 import { ChatHeaderProps } from '@/types/chat';
-import { Menu } from 'lucide-react';
+import { Menu, ArrowLeftRight } from 'lucide-react';
 import CustomModal from '@/components/ui/customModal';
 import FeedbackForm from '@/components/FeedbackForm';
 import { FeedbackPayload } from '@/types/feedback';
 import ChatTabs from './ChatTabs';
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, sessions, setSessions, activeSessionId, onSelectSession, onNewChat }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, manageProjectsOpen = false, onToggleManageProjects, sessions, setSessions, activeSessionId, onSelectSession, onNewChat }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
@@ -180,6 +181,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
             </div>
 
             <div className="flex items-center gap-4">
+                {onToggleManageProjects && (
+                    <ToggleButton
+                        open={manageProjectsOpen}
+                        onToggle={onToggleManageProjects}
+                        label="Manage Projects"
+                        icon={<ArrowLeftRight size={16} className="text-blue-500" />}
+                    />
+                )}
                 {canShareChat && (
                     <div onClick={handleShareChat} className="cursor-pointer">
                         <ShareIcon />

@@ -4,7 +4,7 @@ import React, {ReactNode} from 'react';
 const CustomModal = (
   {id, title, status, onClose, children, showOptionsButton=true}: 
   {
-    id: string, 
+    id?: string,
     title: string, 
     status: boolean, 
     onClose: (id?: string) => void,

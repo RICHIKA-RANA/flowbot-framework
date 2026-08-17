@@ -77,6 +77,7 @@ export const useChatbot = () => {
         window.addEventListener(GRAPH_IDS_CHANGED_EVENT, bump);
         const onSessionChanged = () => {
             setCachedGraphIds([]);
+            setSelectedGraphIds([])
             setHasPrivateDocs(false);
         };
         window.addEventListener(SESSION_CHANGED_EVENT, onSessionChanged);

@@ -160,9 +160,17 @@ const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentLis
         .filter((document) => document.graphId && !document.removing)
         .map((document) => String(document.graphId));
 
+    const selectedSelectableGraphIds = selectedGraphIds.filter((graphId) =>
+        selectableGraphIds.includes(graphId)
+    );
+    
     const allDocumentsSelected =
         selectableGraphIds.length > 0 &&
-        selectableGraphIds.every((graphId) => selectedGraphIds.includes(graphId));
+        selectedSelectableGraphIds.length === selectableGraphIds.length;
+    
+    const someDocumentsSelected =
+        selectedSelectableGraphIds.length > 0 &&
+        selectedSelectableGraphIds.length < selectableGraphIds.length;
     
     const handleSelectAll = () => {
         if (allDocumentsSelected) {
@@ -173,12 +181,19 @@ const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentLis
     };
 
     const handleDocumentSelection = (graphId: string) => {
+        if (!graphId) return;
+
         setSelectedGraphIds((prev) =>
             prev.includes(graphId)
                 ? prev.filter((id) => id !== graphId)
                 : [...prev, graphId]
         );
     };
+
+    const handleRemoveDocument = (jobId: string, graphId: string) => {
+        setSelectedGraphIds((prev) => prev.filter((id) => id !== graphId));
+        removeSessionDocument(jobId);
+    }
 
     return (
         <>
@@ -203,13 +218,18 @@ const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentLis
                             <input
                                 type="checkbox"
                                 checked={allDocumentsSelected}
+                                ref={(input) => {
+                                    if (input) {
+                                        input.indeterminate = someDocumentsSelected;
+                                    }
+                                }}
                                 onChange={handleSelectAll}
                                 disabled={selectableGraphIds.length === 0}
                             />
                             <span className="text-sm">Select all</span>
                         </label>
                         <span className="text-sm text-gray-500">
-                            {selectedGraphIds.length} selected out of {documentList.length}
+                            {selectedSelectableGraphIds.length} selected out of {selectableGraphIds.length}
                         </span>
                     </div>
                 )}
@@ -221,7 +241,7 @@ const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentLis
                                     type="checkbox"
                                     checked={selectedGraphIds.includes(String(document.graphId))}
                                     onChange={() => handleDocumentSelection(String(document.graphId))}
-                                    disabled={document.removing}
+                                    disabled={document.removing || !document.graphId}
                                     aria-label={`Select ${document.fileName}`}
                                 />
                             </div>
@@ -271,7 +291,7 @@ const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentLis
                                                 border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444',
                                             }}
                                             onClick={() => {
-                                                removeSessionDocument(document.jobId);
+                                                handleRemoveDocument(document.jobId, String(document?.graphId))
                                                 setOpenMenu(null);
                                             }}
                                         >

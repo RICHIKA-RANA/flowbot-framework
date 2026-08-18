@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Dispatch, SetStateAction } from 'react';
 import { NamespaceState } from '@/types/namespace';
 import { SessionDocument } from '@/types/fileUploadStatus';
 
@@ -9,6 +9,8 @@ export interface SideDrawerProps {
     namespace?: NamespaceState;
     handleSuggestedQueries: (val: string[]) => void;
     hideDemoDocs?: boolean;
+    selectedGraphIds: string[]
+    setSelectedGraphIds: Dispatch<SetStateAction<string[]>>;
 }
 
 export interface DemoDocsSectionProps {
@@ -50,4 +52,6 @@ export interface TrainedDocumentsProps {
     loading: boolean;
     removeSessionDocument: (jobId: string) => void;
     switchTab: (tabName: string, graphId?: string) => Promise<void>;
+    selectedGraphIds: string[]
+    setSelectedGraphIds: Dispatch<SetStateAction<string[]>>;
 }

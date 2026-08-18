@@ -43,6 +43,8 @@ const Chatbot: React.FC = () => {
     namespace,
     startNewChat,
     currentSession,
+    selectedGraphIds,
+    setSelectedGraphIds,
   } = useChatbot();
 
   const showHistory = !!JSModule?.showHistory;
@@ -349,7 +351,16 @@ const Chatbot: React.FC = () => {
                 )
               }
               {JSModule?.drawerEnabled && !selectedSessionId && (
-                <SidePanel switchTab={switchTab} open={open} setOpen={setOpen} namespace={namespace} handleSuggestedQueries={handleSuggestedQueries} hideDemoDocs={hasPriorSessions} />
+                <SidePanel
+                  switchTab={switchTab}
+                  open={open}
+                  setOpen={setOpen}
+                  namespace={namespace}
+                  handleSuggestedQueries={handleSuggestedQueries} 
+                  hideDemoDocs={hasPriorSessions} 
+                  selectedGraphIds={selectedGraphIds}
+                  setSelectedGraphIds={setSelectedGraphIds}
+                />
               )}
               <ManageProjectsDrawer
                 open={manageProjectsOpen}

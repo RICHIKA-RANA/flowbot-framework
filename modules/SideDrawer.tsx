@@ -149,10 +149,49 @@ const UploadsSection: React.FC<UploadsSectionProps> = ({
     );
 };
 
-const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentList, loading, removeSessionDocument, switchTab }) => {
+const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentList, loading, removeSessionDocument, switchTab, selectedGraphIds, setSelectedGraphIds }) => {
     const [openMenu, setOpenMenu] = useState<string | null>(null);
-
     const { JSModule } = useContext(ThemeContext);
+
+    const selectableGraphIds = documentList
+        .filter((document) => document.graphId && !document.removing)
+        .map((document) => String(document.graphId));
+
+    const selectedSelectableGraphIds = selectedGraphIds.filter((graphId) =>
+        selectableGraphIds.includes(graphId)
+    );
+    
+    const allDocumentsSelected =
+        selectableGraphIds.length > 0 &&
+        selectedSelectableGraphIds.length === selectableGraphIds.length;
+    
+    const someDocumentsSelected =
+        selectedSelectableGraphIds.length > 0 &&
+        selectedSelectableGraphIds.length < selectableGraphIds.length;
+    
+    const handleSelectAll = () => {
+        if (allDocumentsSelected) {
+            setSelectedGraphIds([]);
+        } else {
+            setSelectedGraphIds(selectableGraphIds);
+        }
+    };
+
+    const handleDocumentSelection = (graphId: string) => {
+        if (!graphId) return;
+
+        setSelectedGraphIds((prev) =>
+            prev.includes(graphId)
+                ? prev.filter((id) => id !== graphId)
+                : [...prev, graphId]
+        );
+    };
+
+    const handleRemoveDocument = (jobId: string, graphId: string) => {
+        setSelectedGraphIds((prev) => prev.filter((id) => id !== graphId));
+        removeSessionDocument(jobId);
+    }
+
     return (
         <>
             <div className={styles?.['Divider']} />
@@ -170,9 +209,39 @@ const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentLis
                         <div style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '2px' }}>{JSModule?.trainedEmptySubtitle ?? 'Upload a document to get started.'}</div>
                     </div>
                 )}
+                {!loading && documentList.length > 0 && (
+                    <div className="flex items-center justify-between px-2 py-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={allDocumentsSelected}
+                                ref={(input) => {
+                                    if (input) {
+                                        input.indeterminate = someDocumentsSelected;
+                                    }
+                                }}
+                                onChange={handleSelectAll}
+                                disabled={selectableGraphIds.length === 0}
+                            />
+                            <span className="text-sm">Select all</span>
+                        </label>
+                        <span className="text-sm text-gray-500">
+                            {selectedSelectableGraphIds.length} selected out of {selectableGraphIds.length}
+                        </span>
+                    </div>
+                )}
                 {documentList.map((document) => (
                     <div key={document.jobId} className={styles?.['fileCard']}>
                         <div className={styles?.['fileCardTop']}>
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedGraphIds.includes(String(document.graphId))}
+                                    onChange={() => handleDocumentSelection(String(document.graphId))}
+                                    disabled={document.removing || !document.graphId}
+                                    aria-label={`Select ${document.fileName}`}
+                                />
+                            </div>
                             <div className={styles?.['fileIcon']}>
                                 <FileTextIcon size={22} stroke="#10b981" />
                             </div>
@@ -219,7 +288,7 @@ const TrainedDocuments: React.FC<TrainedDocumentsProps> = ({ styles, documentLis
                                                 border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444',
                                             }}
                                             onClick={() => {
-                                                removeSessionDocument(document.jobId);
+                                                handleRemoveDocument(document.jobId, String(document?.graphId))
                                                 setOpenMenu(null);
                                             }}
                                         >
@@ -322,7 +391,7 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace, ha
     );
 };
 
-export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab, handleSuggestedQueries, hideDemoDocs }) => {
+export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab, handleSuggestedQueries, hideDemoDocs, selectedGraphIds, setSelectedGraphIds }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const {
         uploads, handleFileChange, handleFileDrop, cancelUpload, retryUpload, removeUpload, canCancel,
@@ -399,6 +468,8 @@ export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace,
                 loading={loadingSessionDocuments}
                 removeSessionDocument={removeSessionDocument}
                 switchTab={switchTab}
+                selectedGraphIds={selectedGraphIds}
+                setSelectedGraphIds={setSelectedGraphIds}
             />
         </div>
     );

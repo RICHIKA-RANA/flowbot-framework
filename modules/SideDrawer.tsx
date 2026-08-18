@@ -50,7 +50,8 @@ const UploadFileCard: React.FC<UploadFileCardProps> = ({
     styles, file, canCancel, cancelUpload, retryUpload, removeUpload
 }) => {
     const isDone = file.phase === 'done';
-    const isError = file.phase === 'error' || file.phase === 'cancelled';
+    const isFailed = file.phase === 'error';
+    const isError = isFailed || file.phase === 'cancelled';
     const isProcessing = file.phase === 'processing';
     const isCancelling = file.phase === 'cancelling'
     const statusLabel = isDone ? 'Upload complete'
@@ -96,7 +97,7 @@ const UploadFileCard: React.FC<UploadFileCardProps> = ({
                         : isCancelling ? styles?.['fileProgressCancelling']
                         : ''
                     }`}
-                    style={{ width: isError ? '100%' : `${file.progress}%` }}
+                    style={{ width: isFailed ? '100%' : `${file.progress}%` }}
                 />
             </div>
 
@@ -119,10 +120,6 @@ const UploadFileCard: React.FC<UploadFileCardProps> = ({
                     {!isDone && <Spinner size={12} />}
                     {statusLabel.toUpperCase()}
                 </div>
-            )}
-
-            {!isDone && !isError && !canCancel(file.jobId) && file.progress >= 90 && (
-                <div className={styles?.['cancelHint']}>Cancel will be disabled soon ⓘ</div>
             )}
         </div>
     );

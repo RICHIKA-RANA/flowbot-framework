@@ -10,7 +10,9 @@ export const uploadDocument = async (file: File, jobSessionId?: string, projectI
         if (projectId) {
             formData.append('project_id', projectId);
         }
-        const response = await axiosTTTInstance.post(`/v1/documents`, formData);
+        const response = await axiosTTTInstance.post(`/v1/documents`, formData, {
+            timeout: 5 * 60 * 1000,
+        });
         return response?.data;
     } catch (error: any) {
         console.log(`something went wrong during uploading document`, {

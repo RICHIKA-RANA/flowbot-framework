@@ -18,7 +18,11 @@ export const uploadDocument = async (file: File, jobSessionId?: string, projectI
             status: error?.response?.status,
             responseData: error?.response?.data
         });
-        return false;
+        // A refusal (415 unsupported type, 413 too large) still tells the user
+        // something useful, so hand back the sentence instead of a bare false.
+        // FastAPI puts either a string or { error_code, message } in `detail`.
+        const detail = error?.response?.data?.detail;
+        return { error_message: typeof detail === 'string' ? detail : detail?.message };
     }
 }
 

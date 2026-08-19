@@ -66,9 +66,6 @@ const pollProgress = async (
                 }
                 
                 if (currentState === 'FAILED') {
-                    // `error_message` is the backend's user-facing sentence, but only
-                    // once `failure_reason` is set (module-ttt PR #32) — before that
-                    // PR the same field carried raw exception text, so gate on it.
                     return {
                         ...f,
                         phase: 'error',

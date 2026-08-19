@@ -9,7 +9,6 @@ const TDB_TTT_SERVICE_AUTHORIZATION = config.TDB_TTT_SERVICE_AUTHORIZATION
 
 export const axiosTTTInstance = axios.create({
     baseURL: TDB_TTT_SERVICE,
-    timeout: 20000,
     headers: {
         'Authorization': `Bearer ${TDB_TTT_SERVICE_AUTHORIZATION}`,
         'Accept': 'application/json',

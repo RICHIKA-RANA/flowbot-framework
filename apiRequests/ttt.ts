@@ -57,7 +57,9 @@ export const removeDocument = async (jobId: string) => {
 
 export const getJobProgress = async (jobId: string) => {
     try {
-        const response = await axiosTTTInstance.get(`/v1/jobs/${encodeURIComponent(jobId)}`);
+        const response = await axiosTTTInstance.get(`/v1/jobs/${encodeURIComponent(jobId)}`, {
+            timeout: 20000,
+        });
         return response?.data;
     } catch (error: any) {
         console.log(`Error fetching job progress for ${jobId}`, {
@@ -71,7 +73,9 @@ export const getJobProgress = async (jobId: string) => {
 
 export const cancelDocumentProcessing = async (jobId: string) => {
     try {
-        const response = await axiosTTTInstance.post(`/v1/jobs/${encodeURIComponent(jobId)}/cancel`);
+        const response = await axiosTTTInstance.post(`/v1/jobs/${encodeURIComponent(jobId)}/cancel`, undefined, {
+            timeout: 20000,
+        });
         return response?.data;
     } catch (error: any) {
         console.log(`Error in cancelling the document processing with jobid: ${jobId}`, {

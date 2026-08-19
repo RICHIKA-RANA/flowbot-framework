@@ -277,11 +277,21 @@ export const submitFeedback = async (feedback: FeedbackPayload) => {
     }
 }
 
-export const getAllFeedbacks = async (): Promise<IFeedback[] | null> => {
+export const getAllFeedbacks = async (skip: number, limit: number) => {
     try {
-        const response = await axios.get(`/api/feedback`);
-        return response.data as IFeedback[];
-    } catch (error) {
-        return null
+        const response = await axios.get(`/api/feedback`, {
+            params: { skip, limit }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.log(`something went wrong while fetching feedbacks`, {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        return {
+            success: false,
+            errorMessage: error?.message || `something went wrong while fetching feedbacks`
+        }
     }
 }

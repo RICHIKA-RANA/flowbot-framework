@@ -1,6 +1,7 @@
 import React from 'react';
 import { ChevronRight, MessageSquare } from 'lucide-react';
 import { FeedbackListProps } from '@/types/feedback';
+import { formatRelativeTime } from '@/utils/formatBytes';
 
 const FeedbackList: React.FC<FeedbackListProps> = ({
     feedbacks,
@@ -12,13 +13,14 @@ const FeedbackList: React.FC<FeedbackListProps> = ({
             <div className="flex h-9 items-center border-b border-slate-200 px-4 text-xs font-medium text-slate-600">
                 {feedbacks.length} feedback items
             </div>
-            <div>
+            <div className="max-h-[calc(100vh-360px)] overflow-y-auto">
                 {feedbacks.map((feedback) => (
                     <button
+                        key={feedback._id}
                         type="button"
                         onClick={() => onSelect(feedback)}
-                        className={`flex w-full items-center gap-4 border-b border-slate-200 px-4 py-3 text-left transition-colors ${selectedFeedbackId === feedback.id
-                            ? 'bg-blue-50/50'
+                        className={`flex w-full items-center gap-4 border-b border-slate-200 px-4 py-3 text-left transition-colors ${selectedFeedbackId === feedback._id
+                            ? 'bg-blue-50'
                             : 'bg-white hover:bg-slate-50'
                             }`}
                     >
@@ -36,7 +38,7 @@ const FeedbackList: React.FC<FeedbackListProps> = ({
                                 <span>•</span>
 
                                 <span>
-                                    {String(feedback.createdAt)}
+                                    {formatRelativeTime(String(feedback.createdAt))}
                                 </span>
                             </div>
                         </div>

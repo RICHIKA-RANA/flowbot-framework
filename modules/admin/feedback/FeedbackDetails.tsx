@@ -6,6 +6,7 @@ import {
     X,
 } from 'lucide-react';
 import { FeedbackDetailsProps } from '@/types/feedback';
+import { formatRelativeTime } from '@/utils/formatBytes';
 
 
 const FeedbackDetails: React.FC<FeedbackDetailsProps> = ({
@@ -59,7 +60,7 @@ const FeedbackDetails: React.FC<FeedbackDetailsProps> = ({
                         <span className="text-sm text-slate-600">Submitted</span>
                         <div className="text-sm">
                             <span className="font-semibold text-slate-900">
-                                {String(feedback.createdAt)}
+                                {formatRelativeTime(String(feedback.createdAt))}
                             </span>
                         </div>
                     </div>

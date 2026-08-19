@@ -13,6 +13,9 @@ const FeedbackStats: React.FC<FeedbackStatsProps> = ({
     unread,
     resolved,
 }) => {
+    const getPercentage = (value: number, total: number) =>
+        total === 0 ? '0.0' : ((value / total) * 100).toFixed(1);
+    
     const stats = [
         {
             title: 'Total Feedback',
@@ -31,7 +34,7 @@ const FeedbackStats: React.FC<FeedbackStatsProps> = ({
         {
             title: 'Unread',
             value: unread,
-            subtitle: `${((unread / total) * 100).toFixed(1)}% of total`,
+            subtitle: `${getPercentage(unread, total)}% of total`,
             showDot: true,
             icon: <Mail className="h-5 w-5 text-red-500" />,
             iconClassName: 'bg-red-50',
@@ -39,7 +42,7 @@ const FeedbackStats: React.FC<FeedbackStatsProps> = ({
         {
             title: 'Resolved',
             value: resolved,
-            subtitle: `${((resolved / total) * 100).toFixed(1)}% of total`,
+            subtitle: `${getPercentage(resolved, total)}% of total`,
             icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
             iconClassName: 'bg-green-50',
         },
@@ -75,4 +78,4 @@ const FeedbackStats: React.FC<FeedbackStatsProps> = ({
     );
 };
 
-export default FeedbackStats;
+export default React.memo(FeedbackStats);

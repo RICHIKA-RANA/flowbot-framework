@@ -1,25 +1,35 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import ThemeContext from '@/contexts/ThemeContext';
 import PanelIcon from '@/assets/svgs/PanelIcon';
 import ChevronDownIcon from '@/assets/svgs/ChevronDownIcon';
 import LogoutIcon from '@/assets/svgs/LogoutIcon';
-import { useChatbot } from '@/hooks/useChatbot';
 import { HeaderProps } from '@/types/admin';
 
+const AUTH_SESSION_URL = "/api/auth/session"
 
 const Header: React.FC <HeaderProps> = ({setSidebarOpen}) => {
+    const router = useRouter();
     const { JSModule } = useContext(ThemeContext);
-    const userMenuRef = useRef<HTMLDivElement>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [user, setUser] = useState<{
         name?: string;
         email?: string;
     }>({});
-    const { handleLogout } = useChatbot();
+
+    const handleLogout = async () => {
+        const response = await fetch(AUTH_SESSION_URL, {
+            method: 'DELETE',
+        });
+    
+        if (response.ok) {
+            await router.push('/');
+        }
+    };
 
     useEffect(() => {
         let cancelled = false;
-        fetch("/api/auth/session")
+        fetch(AUTH_SESSION_URL)
             .then((r) => r.json())
             .then((data: { name?: string; email?: string }) => {
                 if (cancelled) return;
@@ -48,7 +58,7 @@ const Header: React.FC <HeaderProps> = ({setSidebarOpen}) => {
             </div>
 
             <div className="flex items-center gap-4">
-                <div className="relative" ref={userMenuRef}>
+                <div className="relative">
                     <div
                         className="flex cursor-pointer select-none items-center gap-2 rounded-full border border-gray-200 px-2 py-1 transition-all duration-200 hover:border-gray-300 hover:bg-gray-50 overflow-visible"
                         onClick={() => setIsUserMenuOpen((prev) => !prev)}

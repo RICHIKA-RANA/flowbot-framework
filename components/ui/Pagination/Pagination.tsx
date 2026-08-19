@@ -35,6 +35,29 @@ const Pagination: React.FC<PaginationProps> = ({
         onPageChange(Math.min(totalPages, currentPage + 1));
     };
 
+    const getVisiblePages = () => {
+        if (totalPages <= 5) {
+            return Array.from(
+                { length: totalPages },
+                (_, index) => index + 1
+            );
+        }
+        const pages = new Set<number>();
+        pages.add(1);
+        pages.add(totalPages);
+
+        for (
+            let page = Math.max(2, currentPage - 1);
+            page <= Math.min(totalPages - 1, currentPage + 1);
+            page++
+        ) {
+            pages.add(page);
+        }
+
+        return Array.from(pages).sort((a, b) => a - b);
+    };
+
+    const visiblePages = getVisiblePages();
     return (
         <div className="flex h-[74px] items-center justify-between px-5">
             <span className="text-xs text-slate-700">
@@ -50,45 +73,29 @@ const Pagination: React.FC<PaginationProps> = ({
                 >
                     <ChevronLeft className="h-4 w-4" />
                 </button>
-
-                {[1, 2, 3, 4, 5].map((page) => {
-                    if (page > totalPages) {
-                        return null;
-                    }
-
+                {visiblePages.map((page, index) => {
+                    const previousPage = visiblePages[index - 1];
                     return (
-                        <button
-                            key={page}
-                            type="button"
-                            onClick={() => onPageChange(page)}
-                            className={`h-8 w-8 rounded-md text-xs font-medium ${currentPage === page
-                                    ? 'border border-blue-500 text-blue-600'
-                                    : 'text-slate-700 hover:bg-slate-50'
-                                }`}
-                        >
-                            {page}
-                        </button>
+                        <React.Fragment key={page}>
+                            {previousPage && page - previousPage > 1 && (
+                                <span className="px-1 text-slate-500">
+                                    ...
+                                </span>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => onPageChange(page)}
+                                className={`h-8 w-8 rounded-md text-xs font-medium ${currentPage === page
+                                        ? 'border border-blue-500 text-blue-600'
+                                        : 'text-slate-700 hover:bg-slate-50'
+                                    }`}
+                            >
+                                {page}
+                            </button>
+                        </React.Fragment>
                     );
                 })}
-
-                {totalPages > 6 && (
-                    <>
-                        <span className="px-1 text-slate-500">
-                            ...
-                        </span>
-
-                        <button
-                            type="button"
-                            onClick={() => onPageChange(totalPages)}
-                            className={`h-8 w-8 rounded-md text-xs font-medium ${currentPage === totalPages
-                                    ? 'border border-blue-500 text-blue-600'
-                                    : 'text-slate-700 hover:bg-slate-50'
-                                }`}
-                        >
-                            {totalPages}
-                        </button>
-                    </>
-                )}
 
                 <button
                     type="button"

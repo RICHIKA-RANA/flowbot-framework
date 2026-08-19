@@ -3,12 +3,15 @@ import { createFeedback, getFeedbacks } from '@/models/feedback';
 import { getVerifiedEmail } from '@/utils/auth';
 import { isAdmin } from '@/utils/adminAuth';
 import { FeedbackPayload } from '@/types/feedback';
+import dbConnect from '@/config/mongodb';
 
 export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse,
 ) {
     try {
+        await dbConnect();
+
         if (req.method === 'POST') {
             const email = getVerifiedEmail(req);
             
@@ -47,7 +50,8 @@ export default async function handler(
                 });
             }
 
-            const feedbacks = await getFeedbacks();
+            const { skip, limit } = req.query;
+            const feedbacks = await getFeedbacks(Number(skip), Number(limit))
             return res.status(200).json(feedbacks);
         }
 

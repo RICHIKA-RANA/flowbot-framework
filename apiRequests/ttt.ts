@@ -18,7 +18,8 @@ export const uploadDocument = async (file: File, jobSessionId?: string, projectI
             status: error?.response?.status,
             responseData: error?.response?.data
         });
-        return false;
+        const detail = error?.response?.data?.detail;
+        return { error_message: typeof detail === 'string' ? detail : detail?.message };
     }
 }
 

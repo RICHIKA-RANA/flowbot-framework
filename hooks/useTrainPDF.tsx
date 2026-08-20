@@ -66,7 +66,14 @@ const pollProgress = async (
                 }
                 
                 if (currentState === 'FAILED') {
-                    return { ...f, phase: 'error', progress: progressPercentage };
+                    return {
+                        ...f,
+                        phase: 'error',
+                        progress: progressPercentage,
+                        error: response?.failure_reason && response?.error_message
+                            ? response.error_message
+                            : 'Something went wrong while processing your document',
+                    };
                 }
 
                 if (currentState === 'COMPLETED') {
@@ -237,6 +244,17 @@ export const useTainPDF = () => {
         Array.from(files).forEach((file) => addFile(file));
     };
 
+    const markUploadFailed = (fileName: string, message: string) => {
+        const tempId = crypto.randomUUID();
+        setUploads((prev: FileUploadStatus[]) =>
+            prev.map((f) =>
+                f.name === fileName && !f.jobId
+                    ? { ...f, jobId: tempId, phase: 'error', error: message }
+                    : f
+            )
+        );
+    };
+
     const addFile = async (file: File) => {
         const projectId = getActiveProjectId();
         const entry: FileUploadStatus = {
@@ -256,7 +274,10 @@ export const useTainPDF = () => {
             jobSessionIdRef.current = jobSessionId;
 
             const res = await uploadDocument(file, jobSessionId, projectId);
-            if (!res?.job_id) throw new Error('upload failed');
+            if (!res?.job_id) {
+                markUploadFailed(file.name, res?.error_message || 'Something went wrong while processing your document.');
+                return;
+            }
             const { job_id } = res;
             setUploads((prev: FileUploadStatus[]) =>
                 prev.map((f) =>
@@ -266,19 +287,7 @@ export const useTainPDF = () => {
                 )
             );
         } catch {
-            // a unique jobId to differentiate the file
-            const tempId = crypto.randomUUID();
-            setUploads((prev: FileUploadStatus[]) =>
-                prev.map((f) =>
-                    f.name === file.name && !f.jobId
-                        ? {
-                              ...f,
-                              jobId: tempId,
-                              phase: 'error',
-                          }
-                        : f
-                )
-            );
+            markUploadFailed(file.name, 'Something went wrong while processing your document.');
         }
     };
 

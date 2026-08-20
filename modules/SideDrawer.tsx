@@ -101,6 +101,10 @@ const UploadFileCard: React.FC<UploadFileCardProps> = ({
             </div>
 
             {isError ? (
+                <>
+                <div className={`${styles?.['fileStatusLabel']} ${styles?.['fileStatusError']}`}>
+                    {statusLabel}
+                </div>
                 <div className={styles?.['fileErrorActions']}>
                     {/* <button className={styles?.['fileRetryBtn']} onClick={() => retryUpload(file.name)}>↻ Retry</button> */}
                     {
@@ -109,6 +113,7 @@ const UploadFileCard: React.FC<UploadFileCardProps> = ({
                         )
                     }
                 </div>
+                </>
             ) : (
                 <div className={`${styles?.['fileStatusLabel']} ${
                     isDone ? styles?.['fileStatusDone']

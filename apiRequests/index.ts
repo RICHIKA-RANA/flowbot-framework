@@ -1,8 +1,9 @@
+import axios from 'axios';
 import { ChatbotsResponse, LiveChatbot } from "@/types/chat";
 import { FeedbackPayload } from "@/types/feedback";
 import { HistorySessionSummary, HistorySessionDetail } from "@/types/history";
 import { axiosPDFInstance, axiosConvInstance } from "@/utils/axiosInstance"
-import axios from 'axios';
+import { IFeedback } from "@/models/feedback";
 
 type CHAT_ID = string | string[] | undefined
 
@@ -276,11 +277,21 @@ export const submitFeedback = async (feedback: FeedbackPayload) => {
     }
 }
 
-export const getAllFeedbacks = async () => {
+export const getAllFeedbacks = async (skip: number, limit: number) => {
     try {
-        const response = await axios.get(`/api/feedback`);
-        return response;
-    } catch (error) {
-        return null
+        const response = await axios.get(`/api/feedback`, {
+            params: { skip, limit }
+        });
+        return response.data;
+    } catch (error: any) {
+        console.log(`something went wrong while fetching feedbacks`, {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        return {
+            success: false,
+            errorMessage: error?.message || `something went wrong while fetching feedbacks`
+        }
     }
 }

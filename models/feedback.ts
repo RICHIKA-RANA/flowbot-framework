@@ -49,21 +49,28 @@ export async function createFeedback(feedback: FeedbackPayload): Promise<IFeedba
 }
 
 // retrieve feedbacks
-export async function getFeedbacks(filters?: {
-    email?: string;
-    sessionId?: string;
-}): Promise<IFeedback[]> {
+export async function getFeedbacks(
+    skip: number = 0,
+    limit: number = 10
+): Promise<{
+    feedbacks: IFeedback[];
+    total: number;
+}> {
 
-    // building query with filters (if any)
-    const query: Record<string, string> = {};
-    if (filters?.email) {
-        query.email = filters.email;
-    }
-    if (filters?.sessionId) {
-        query.sessionId = filters.sessionId;
-    }
+    const [feedbacks, total] = await Promise.all([
+        FeedbackModel.find({})
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean<IFeedback[]>(),
 
-    return await FeedbackModel.find(query).sort({ createdAt: -1 }).lean();
+        FeedbackModel.countDocuments({}),
+    ]);
+
+    return {
+        feedbacks,
+        total,
+    };
 }
 
 export default FeedbackModel;

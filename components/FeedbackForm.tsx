@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FeedbackFormProps } from '@/types/feedback';
+import { feedbackCategories, FeedbackFormProps } from '@/types/feedback';
 import { getCurrentSessionId } from '@/utils/sessionJobs';
 
 const FeedbackForm = ({ onSubmit }: FeedbackFormProps) => {
@@ -56,12 +56,11 @@ const FeedbackForm = ({ onSubmit }: FeedbackFormProps) => {
                     className="w-full border rounded-md px-3 py-2"
                 >
                     <option value="">Select a category</option>
-                    <option value="accuracy">Answer Accuracy</option>
-                    <option value="performance">Performance</option>
-                    <option value="ui">User Experience</option>
-                    <option value="feature">Feature Request</option>
-                    <option value="bug">Bug Report</option>
-                    <option value="other">Other</option>
+                    {feedbackCategories.map((category) => (
+                        <option key={category.value} value={category.value}>
+                            {category.label}
+                        </option>
+                    ))}
                 </select>
             </div>
 

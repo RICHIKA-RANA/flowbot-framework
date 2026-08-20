@@ -292,17 +292,26 @@ export const useTainPDF = () => {
     };
 
     const cancelUpload = async (jobId: string) => {
-        // const file = uploadsRef.current.find((f: FileUploadStatus) => f.name === fileName);
         if (!jobId) return
-        
-        // here we are not changing the UI status directly, instead it is handled in pollprogress function;
-        const response = await cancelDocumentProcessing(jobId)
+
+        setUploads((prev: FileUploadStatus[]) =>
+            prev.map((f) => f.jobId === jobId ? { ...f, phase: 'cancelling', progress: 0 } : f)
+        );
+
+        const response = await cancelDocumentProcessing(jobId);
+
         if (!response) {
-            toast("Document processing cancellation failed", { type: "error" })
-        } else {
-            // if cancellation is successful
+            toast("Document processing cancellation failed", { type: "error" });
             setUploads((prev: FileUploadStatus[]) =>
-                prev.map((f) => f.jobId === jobId ? { ...f, phase: 'cancelling', progress: 0} : f)
+                prev.map((f) => (f.jobId === jobId && f.phase === 'cancelling') ? { ...f, phase: 'processing' } : f)
+            );
+            return;
+        }
+
+        if (response?.state === 'CANCELLED') {
+            cancelledRef.current.add(jobId);
+            setUploads((prev: FileUploadStatus[]) =>
+                prev.map((f) => f.jobId === jobId ? { ...f, phase: 'cancelled', error: 'Upload cancelled', progress: 0 } : f)
             );
         }
     };
@@ -341,7 +350,7 @@ export const useTainPDF = () => {
 
     const canCancel = (jobId: string) => {
         const f = uploads.find((f: FileUploadStatus) => f.jobId === jobId);
-        return f ? f.progress < 90 && f.phase === 'processing' : false;
+        return f ? f.phase === 'processing' : false;
     };
 
     return {

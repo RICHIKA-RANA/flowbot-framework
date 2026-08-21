@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageSquare, Plus, MoreVertical, Trash2, Eye, Settings } from 'lucide-react';
+import { MessageSquare, Plus, MoreVertical, Trash2, Eye } from 'lucide-react';
 import { listHistorySessions, deleteHistorySession } from '@/apiRequests';
 import { MenuItem, ConfirmDialog, EmptyState } from '@/components/ui';
 import { HistorySessionSummary, HistorySidebarProps } from '@/types/history';
@@ -230,22 +230,6 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
                         );
                     })
                 )}
-            </div>
-
-            {/* Settings (pinned) */}
-            <div style={{ borderTop: `1px solid ${COLORS.border}`, padding: '12px 16px' }}>
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 12,
-                        color: COLORS.textMuted,
-                        fontSize: 14,
-                    }}
-                >
-                    <Settings size={18} />
-                    Settings
-                </div>
             </div>
 
             {pendingDelete && (

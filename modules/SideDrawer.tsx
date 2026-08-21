@@ -13,7 +13,9 @@ import { FileText, ChevronRight, Wand2, FolderOpen } from 'lucide-react';
 import { PublicDocument } from "@/types/namespace";
 
 const UploadDropZone: React.FC<UploadDropZoneProps> = ({
-    styles, dragOver, setDragOver, handleFileDrop, handleFileChange, fileInputRef
+    styles, dragOver, setDragOver, handleFileDrop, handleFileChange, fileInputRef,
+    accept = '.pdf,.docx,.txt',
+    hint = 'PDF, DOCX, TXT (Max 50MB)',
 }) => {
     const { JSModule } = useContext(ThemeContext);
     return (
@@ -30,7 +32,7 @@ const UploadDropZone: React.FC<UploadDropZoneProps> = ({
         >
             <input
                 type="file"
-                accept=".pdf,.docx,.txt"
+                accept={accept}
                 multiple
                 onChange={handleFileChange}
                 ref={fileInputRef}
@@ -40,7 +42,7 @@ const UploadDropZone: React.FC<UploadDropZoneProps> = ({
                 <UploadIcon size={20} stroke="#3b82f6" />
             </div>
             <div className={styles?.['dropZoneTitle']}>{JSModule?.uploadDropTitle ?? 'Upload or drag & drop'}</div>
-            <div className={styles?.['dropZoneHint']}>PDF, DOCX, TXT (Max 50MB)</div>
+            <div className={styles?.['dropZoneHint']}>{hint}</div>
         </label>
     </div>
     );
@@ -399,10 +401,19 @@ const DemoDocsSection: React.FC<DemoDocsSectionProps> = ({ styles, namespace, ha
 export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace, switchTab, handleSuggestedQueries, hideDemoDocs, selectedGraphIds, setSelectedGraphIds }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const {
-        uploads, handleFileChange, handleFileDrop, cancelUpload, retryUpload, removeUpload, canCancel,
+        uploads, uploadConstraints, handleFileChange, handleFileDrop, cancelUpload, retryUpload, removeUpload, canCancel,
         documentList, loadingSessionDocuments, removeSessionDocument
     } = useTainPDF();
     const router = useRouter();
+
+    const accept = uploadConstraints
+        ? uploadConstraints.supported_types.map((t) => `.${t.extension}`).join(',')
+        : '.pdf,.docx,.txt';
+    const hint = uploadConstraints
+        ? uploadConstraints.supported_types
+            .map((t) => `${t.extension.toUpperCase()} (max ${t.max_file_size_mb} MB)`)
+            .join(', ')
+        : 'PDF, DOCX, TXT (Max 50MB)';
     const { 'chat-id': chatId } = router.query;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [drawerWidth, setDrawerWidth] = useState(320);
@@ -452,6 +463,8 @@ export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace,
                 handleFileDrop={handleFileDrop}
                 handleFileChange={handleFileChange}
                 fileInputRef={fileInputRef}
+                accept={accept}
+                hint={hint}
             />
 
             {!hideDemoDocs && namespace?.mode === 'public' && namespace.publicDocs.length > 0 && uploads.length === 0 && documentList.length === 0 && (

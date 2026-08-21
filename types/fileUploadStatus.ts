@@ -19,3 +19,14 @@ export type SessionDocument = {
     graphId?: string;
     removing?: boolean;
 };
+
+export interface UploadConstraint {
+    extension: string;
+    mime_type: string;
+    max_file_size_mb: number;
+}
+
+export interface UploadConstraintsResponse {
+    supported_types: UploadConstraint[];
+    max_file_size_mb: number;
+}

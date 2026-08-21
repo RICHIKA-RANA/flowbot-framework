@@ -25,6 +25,20 @@ export const uploadDocument = async (file: File, jobSessionId?: string, projectI
     }
 }
 
+export const getUploadConstraints = async () => {
+    try {
+        const response = await axiosTTTInstance.get('/v1/documents/constraints');
+        return response?.data ?? false;
+    } catch (error: any) {
+        console.log('something went wrong while fetching upload constraints', {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        return false;
+    }
+}
+
 export const listSessionDocuments = async (jobSessionId: string) => {
     try {
         const response = await axiosTTTInstance.get(`/v1/documents`, {

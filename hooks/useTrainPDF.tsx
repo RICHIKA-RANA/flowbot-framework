@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState, useRef } from 'react';
-import { uploadDocument, getJobProgress, cancelDocumentProcessing, listSessionDocuments, removeDocument } from '@/apiRequests/ttt';
+import { uploadDocument, getUploadConstraints, getJobProgress, cancelDocumentProcessing, listSessionDocuments, removeDocument } from '@/apiRequests/ttt';
+import { UploadConstraintsResponse } from '@/types/fileUploadStatus';
 import ThemeContext from '@/contexts/ThemeContext';
 import { useRouter } from 'next/router';
 import { usePolling } from '@/hooks/usePolling';
@@ -131,6 +132,7 @@ export const useTainPDF = () => {
     const { JSModule } = useContext(ThemeContext);
     const [trainingInProgress, setTrainingInProgress] = useState(false);
     const [uploads, setUploads] = useState<FileUploadStatus[]>([]);
+    const [uploadConstraints, setUploadConstraints] = useState<UploadConstraintsResponse | null>(null);
     const cancelledRef = useRef<Set<string>>(new Set());
     const uploadsRef = useRef<FileUploadStatus[]>([]);
     const jobSessionIdRef = useRef<string>('');
@@ -147,6 +149,12 @@ export const useTainPDF = () => {
         jobSessionIdRef.current = getJobSessionId();
         rehydrateSession();
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        getUploadConstraints().then((data) => {
+            if (data) setUploadConstraints(data);
+        });
     }, []);
 
     useEffect(() => {
@@ -255,8 +263,25 @@ export const useTainPDF = () => {
         );
     };
 
+    const extOf = (filename: string) => filename.split('.').pop()?.toLowerCase() || '';
+
+    const validateSelectedFile = (file: File, constraints: UploadConstraintsResponse | null): string | null => {
+        if (!constraints) return null;
+        const ext = extOf(file.name);
+        const type = constraints.supported_types.find((t) => t.extension === ext);
+        if (!type) {
+            const readable = constraints.supported_types.map((t) => `.${t.extension}`).join(', ');
+            return `We only support ${readable} files right now.`;
+        }
+        if (file.size > type.max_file_size_mb * 1024 * 1024) {
+            return `This file is too large (max ${type.max_file_size_mb} MB).`;
+        }
+        return null;
+    };
+
     const addFile = async (file: File) => {
         const projectId = getActiveProjectId();
+        const validationError = validateSelectedFile(file, uploadConstraints);
         const entry: FileUploadStatus = {
             name: file.name,
             size: file.size,
@@ -266,6 +291,13 @@ export const useTainPDF = () => {
             jobId: '',
             graphId: ''
         };
+        if (validationError) {
+            setUploads((prev: FileUploadStatus[]) => [
+                ...prev,
+                { ...entry, jobId: crypto.randomUUID(), phase: 'error', error: validationError },
+            ]);
+            return;
+        }
         setUploads((prev: FileUploadStatus[]) => [...prev, entry]);
         setTrainingInProgress(true);
         
@@ -356,6 +388,7 @@ export const useTainPDF = () => {
     return {
         documentList,
         uploads,
+        uploadConstraints,
         trainingInProgress,
         handleFileChange,
         handleFileDrop,

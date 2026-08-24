@@ -148,13 +148,10 @@ export const useTainPDF = () => {
     useEffect(() => {
         jobSessionIdRef.current = getJobSessionId();
         rehydrateSession();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
         getUploadConstraints().then((data) => {
             if (data) setUploadConstraints(data);
         });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {

@@ -8,14 +8,15 @@ import Spinner from '@/components/ui/Spinner';
 import { MoreVertical } from 'lucide-react';
 import { SideDrawerProps, UploadDropZoneProps, UploadFileCardProps, UploadsSectionProps, TrainedDocumentsProps, DemoDocsSectionProps } from '@/types/sideDrawer';
 import { formatBytes } from '@/utils/formatBytes';
+import { DEFAULT_UPLOAD_ACCEPT, DEFAULT_UPLOAD_HINT } from '@/utils/upload';
 import { FILE_TYPE_GLYPH, DEFAULT_FILE_GLYPH, fileTypeKey } from '@/utils/fileType';
 import { FileText, ChevronRight, Wand2, FolderOpen } from 'lucide-react';
 import { PublicDocument } from "@/types/namespace";
 
 const UploadDropZone: React.FC<UploadDropZoneProps> = ({
     styles, dragOver, setDragOver, handleFileDrop, handleFileChange, fileInputRef,
-    accept = '.pdf,.docx,.txt',
-    hint = 'PDF, DOCX, TXT (Max 50MB)',
+    accept = DEFAULT_UPLOAD_ACCEPT,
+    hint = DEFAULT_UPLOAD_HINT,
 }) => {
     const { JSModule } = useContext(ThemeContext);
     return (
@@ -408,12 +409,12 @@ export const SidePanel: React.FC<SideDrawerProps> = ({ open, setOpen, namespace,
 
     const accept = uploadConstraints
         ? uploadConstraints.supported_types.map((t) => `.${t.extension}`).join(',')
-        : '.pdf,.docx,.txt';
+        : DEFAULT_UPLOAD_ACCEPT;
     const hint = uploadConstraints
         ? uploadConstraints.supported_types
             .map((t) => `${t.extension.toUpperCase()} (max ${t.max_file_size_mb} MB)`)
             .join(', ')
-        : 'PDF, DOCX, TXT (Max 50MB)';
+        : DEFAULT_UPLOAD_HINT;
     const { 'chat-id': chatId } = router.query;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [drawerWidth, setDrawerWidth] = useState(320);

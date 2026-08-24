@@ -43,7 +43,7 @@ export const useChatbot = () => {
     const [newChatRoom, setNewChatRoom] = useState<string>('');
     const [currentSession, setCurrentSession] = useState<string>('');
     const [content, setContent] = useState('');
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(true);
     const [hiddenInput, setHiddenInput] = useState(false);
     const [references, setReferences] = useState<IReferences[]>([]);
     const [messageState, setMessageState] = useState<{

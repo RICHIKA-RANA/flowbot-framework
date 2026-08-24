@@ -200,10 +200,14 @@ export const useChatbot = () => {
     };
 
     const handleLogout = async () => {
-        await fetch(AUTH_SESSION_URL, { method: 'DELETE' });
+        const response = await fetch(AUTH_SESSION_URL, { method: 'DELETE' });
         setIsLoggedIn(false);
         if (JSModule?.handleHeaderPane) {
             JSModule.handleHeaderPane('logout');
+        }
+
+        if (response.ok) {
+            window.location.href = '/';
         }
     };
     const { messages, history } = messageState;

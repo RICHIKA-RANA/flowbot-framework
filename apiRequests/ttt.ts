@@ -25,6 +25,26 @@ export const uploadDocument = async (file: File, jobSessionId?: string, projectI
     }
 }
 
+export const getUploadConstraints = async () => {
+    try {
+        const response = await axiosTTTInstance.get('/v1/documents/constraints', {
+            timeout: 10000,
+        });
+        const data = response?.data;
+        if (data && Array.isArray(data.supported_types) && typeof data.max_file_size_mb === 'number') {
+            return data;
+        }
+        return false;
+    } catch (error: any) {
+        console.log('something went wrong while fetching upload constraints', {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        return false;
+    }
+}
+
 export const listSessionDocuments = async (jobSessionId: string) => {
     try {
         const response = await axiosTTTInstance.get(`/v1/documents`, {

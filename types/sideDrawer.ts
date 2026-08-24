@@ -26,6 +26,8 @@ export interface UploadDropZoneProps {
     handleFileDrop: (files: FileList) => void;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     fileInputRef: React.RefObject<HTMLInputElement>;
+    accept?: string;
+    hint?: string;
 }
 
 export interface UploadFileCardProps {

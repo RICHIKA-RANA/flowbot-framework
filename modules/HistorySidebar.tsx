@@ -18,7 +18,6 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
     onNewChat,
     reloadToken,
     onCountChange,
-    messages,
 }) => {
     const [sessions, setSessions] = useState<HistorySessionSummary[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
@@ -89,17 +88,11 @@ const HistorySidebar: React.FC<HistorySidebarProps> = ({
             <div style={{ padding: 16 }}>
                 <button
                     onClick={onNewChat}
-                    className={`flex items-center justify-center gap-2 w-full p-3 border bg-white rounded text-sm font-semibold
-                        ${!messages?.length
-                            ? "cursor-not-allowed opacity-50"
-                            : "cursor-pointer hover:bg-gray-100"
-                        }`
-                    }
+                    className="flex items-center justify-center gap-2 w-full p-3 border bg-white rounded text-sm font-semibold cursor-pointer hover:bg-gray-100"
                     style={{
                         borderColor: COLORS.border,
                         color: COLORS.accent,
                     }}
-                    disabled={!messages?.length}
                 >
                     <Plus size={18} />
                     New chat

@@ -14,7 +14,7 @@ import SuggestedQueries from '@/modules/SuggestedQueries';
 import HistorySidebar from '@/modules/HistorySidebar';
 import PastConversation from '@/modules/PastConversation';
 import { HistorySessionSummary } from '@/types/history';
-import { listHistorySessions } from '@/apiRequests';
+import { listHistorySessions, updateSessionStatus } from '@/apiRequests';
 import { GRAPH_IDS_CHANGED_EVENT, getCurrentSessionId } from '@/utils/sessionJobs';
 
 const Chatbot: React.FC = () => {
@@ -84,7 +84,12 @@ const Chatbot: React.FC = () => {
   }
 
   const handleNewChat = async () => {
-    if (!messages?.length) return
+    // abandoning an empty session -> close it instead of leaving a blank tab behind
+    const abandonedSessionId = getCurrentSessionId();
+    if (abandonedSessionId && !messages?.length) {
+      await updateSessionStatus(abandonedSessionId, 'INACTIVE');
+      setSessions((prev) => prev.filter((s) => s.sessionId !== abandonedSessionId));
+    }
     setSelectedSessionId(null);
     startNewChat()
     await showNewChatTab()
@@ -228,7 +233,6 @@ const Chatbot: React.FC = () => {
                 onNewChat={handleNewChat}
                 reloadToken={historyReloadToken}
                 onCountChange={handleSessionsCount}
-                messages={messages}
               />
             )
           ) : leftPanelExpanded && JSModule?.leftPanelHtml ? (

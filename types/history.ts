@@ -1,4 +1,4 @@
-import { Message } from "./chat";
+import { Message, TokenUsage } from "./chat";
 
 export interface HistorySessionSummary {
     sessionId: string;
@@ -12,6 +12,7 @@ export interface HistoryChatEntry {
     question: string;
     answer: string;
     graphIds: string[];
+    tokens?: TokenUsage;
     askedAt: string;
 }
 

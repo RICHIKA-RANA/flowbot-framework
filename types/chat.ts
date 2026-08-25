@@ -3,6 +3,12 @@ import { Document } from 'langchain/document';
 import { AxiosResponse } from 'axios';
 import { HistorySessionSummary } from './history';
 
+export interface TokenUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  total_tokens?: number;
+}
+
 export type Message = {
   type: 'apiMessage' | 'userMessage';
   message: string;
@@ -12,7 +18,8 @@ export type Message = {
   step?: { [key: string]: any };
   answer?: string;
   error?: boolean;
-  errorMessage?: string
+  errorMessage?: string;
+  tokens?: TokenUsage;
 };
 
 export type contextItem = {

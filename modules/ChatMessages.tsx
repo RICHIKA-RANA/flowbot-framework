@@ -7,11 +7,11 @@ import ThemeContext from "@/contexts/ThemeContext";
 import Image from "next/image";
 import { Fragment, useContext, useRef, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { IReferences, Message } from '@/types/chat';
+import { IReferences, Message, TokenUsage } from '@/types/chat';
 import rehypeRaw from 'rehype-raw';
 import { DynamicComponent } from "@/components/DynamicComponent";
 import { useRouter } from 'next/router';
-import { FileText, ChevronUp } from "lucide-react";
+import { FileText, ChevronUp, ChevronDown, BarChart2 } from "lucide-react";
 import { Document } from "langchain/document";
 import SourcePanel from "./SourcePanel";
 import { getDocumentFile } from "@/apiRequests/ttt";
@@ -28,6 +28,90 @@ interface ChatMessageProps {
     onUploadClick?: () => void
     footer?: React.ReactNode
 }
+
+const TokenUsagePill: React.FC<{ usage?: TokenUsage }> = ({ usage }) => {
+    const [open, setOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [open]);
+
+    if (!usage) return null;
+    const input = usage.input_tokens ?? 0;
+    const output = usage.output_tokens ?? 0;
+    const total = usage.total_tokens ?? input + output;
+    if (!total) return null;
+    const fmt = (n: number) => n.toLocaleString();
+    return (
+        <div ref={containerRef} className="relative inline-block">
+            <button
+                type="button"
+                aria-expanded={open}
+                aria-haspopup="dialog"
+                onClick={() => setOpen((prev) => !prev)}
+                className="inline-flex h-9 items-center gap-2 border border-blue-500 rounded-md bg-white px-3 text-sm text-blue-600 font-medium hover:bg-blue-50"
+            >
+                <BarChart2 size={16} />
+                <span className="font-medium">Token usage</span>
+                <span className="font-semibold text-blue-700">{fmt(total)}</span>
+                {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            {open && (
+                <div className="absolute top-full left-0 z-10 mt-2 w-56 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+                    <div className="mb-2 flex items-center gap-1.5 text-sm text-gray-500">
+                        <BarChart2 size={16} />
+                        <span>Token usage</span>
+                        <span className="ml-auto font-semibold text-gray-900">{fmt(total)}</span>
+                    </div>
+                    <div className="space-y-1.5 text-sm">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-blue-500" />
+                                <span className="text-gray-600">Input tokens</span>
+                            </div>
+                            <span className="font-medium text-gray-900">{fmt(input)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                                <span className="text-gray-600">Output tokens</span>
+                            </div>
+                            <span className="font-medium text-gray-900">{fmt(output)}</span>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-gray-100 pt-1">
+                            <span className="font-medium text-gray-900">Total tokens</span>
+                            <span className="font-semibold text-gray-900">{fmt(total)}</span>
+                        </div>
+                    </div>
+                    <div className="mt-2 border-t border-gray-100 pt-2 text-xs text-gray-400">
+                        Values reflect actual LLM usage for this query.
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const documentColumnStyle = (expanded: boolean): React.CSSProperties => ({
     width: expanded ? '78%' : '46%',
@@ -150,6 +234,8 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
 
                     {/* TODO: Move Icon to conf */}
                     {messages.map((message, index) => {
+                            const hasFooter = message?.type === 'apiMessage' &&
+                                (message?.tokens || (message?.sourceDocs && message.sourceDocs.length > 0));
                             let icon;
                             let className;
                             if (message.type === 'apiMessage') {
@@ -263,10 +349,11 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                                 >
                                                     <span
                                                         className={`${styles?.markdownanswerspan} ${message?.type == 'apiMessage' ? styles?.chat_container_left : styles?.chat_container_right}
-                                                        ${message?.type === 'apiMessage' && message?.sourceDocs? styles?.chat_container_left_with_reference: ''}
+                                                        ${hasFooter ? styles?.chat_container_left_with_reference : ''}
                                                             `}
+                                                        style={message?.type === 'apiMessage' ? { display: 'flex', flexDirection: 'column' } : undefined}
                                                     >
-                                                        <div style={{ display: 'flex' }}>
+                                                        <div style={{ display: 'flex', flex: message?.type === 'apiMessage' ? '1 1 auto' : undefined }}>
                                                             {!message?.step?.injectionType &&
                                                                 <div
 
@@ -310,20 +397,35 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                                             )}
                                                         </div>
 
-                                                        {/* here is the document icon to see the pagewise source references */}
-                                                        {(message?.type === 'apiMessage' && message?.sourceDocs && message.sourceDocs.length > 0) && (
-                                                          <button
-                                                          className={`${styles.referenceButton}`}
-                                                          onClick={() => {handleSourceReferencesView(message, index)}}
-                                                        >
-                                                          <span className={`${styles?.referenceButton__icon}`}>
-                                                          {expandedMessageIndex === index
-                                                          ? <ChevronUp size={20} />
-                                                          : <FileText size={20} />}
-                                                          </span>
-                                                          <span className={`${styles?.referenceButton__divider}`} />
-                                                          <span className={`${styles?.referenceButton__count}`}>{message?.sourceDocs?.length}</span>
-                                                        </button>
+                                                        {/* Bottom-right action row: token usage + sources */}
+                                                        {hasFooter && (
+                                                          <div
+                                                            style={{
+                                                              position: 'absolute',
+                                                              right: 8,
+                                                              bottom: 8,
+                                                              display: 'flex',
+                                                              alignItems: 'center',
+                                                              gap: 8,
+                                                            }}
+                                                          >
+                                                            {message?.tokens && <TokenUsagePill usage={message.tokens} />}
+                                                            {message?.sourceDocs && message.sourceDocs.length > 0 && (
+                                                              <button
+                                                                className={`${styles.referenceButton}`}
+                                                                style={{ position: 'static', height: 36 }}
+                                                                onClick={() => {handleSourceReferencesView(message, index)}}
+                                                              >
+                                                                <span className={`${styles?.referenceButton__icon}`}>
+                                                                  {expandedMessageIndex === index
+                                                                    ? <ChevronUp size={20} />
+                                                                    : <FileText size={20} />}
+                                                                </span>
+                                                                <span className={`${styles?.referenceButton__divider}`} />
+                                                                <span className={`${styles?.referenceButton__count}`}>{message?.sourceDocs?.length}</span>
+                                                              </button>
+                                                            )}
+                                                          </div>
                                                         )}
                                                     </span>
                                                     {(JSModule?.conversationLayout && ((message?.step?.inputType === 'await' && index === messages.length - 1) || (typingState && index === messages.length - 1) || (loading && index === messages.length - 1))) &&

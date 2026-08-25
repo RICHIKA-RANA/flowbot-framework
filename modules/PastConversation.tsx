@@ -12,7 +12,7 @@ const noop = () => {};
 const toHistoryMessages = (detail: HistorySessionDetail): Message[] =>
     detail.chats.flatMap((chat) => [
         { type: 'userMessage', message: chat.question, src: 'test' } as Message,
-        { type: 'apiMessage', message: chat.answer, src: 'talkingDb' } as Message,
+        { type: 'apiMessage', message: chat.answer, src: 'talkingDb', tokens: chat.tokens } as Message,
     ]);
 
 // Sources list + read-only banner, shown after the messages.

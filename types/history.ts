@@ -1,3 +1,5 @@
+import { TokenUsage } from "./chat";
+
 export interface HistorySessionSummary {
     sessionId: string;
     chatbotId: string;
@@ -10,6 +12,7 @@ export interface HistoryChatEntry {
     question: string;
     answer: string;
     graphIds: string[];
+    tokens?: TokenUsage;
     askedAt: string;
 }
 

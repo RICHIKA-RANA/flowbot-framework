@@ -17,7 +17,7 @@ import FeedbackForm from '@/components/FeedbackForm';
 import { FeedbackPayload } from '@/types/feedback';
 import ChatTabs from './ChatTabs';
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, messages, manageProjectsOpen = false, onToggleManageProjects, sessions, setSessions, activeSessionId, onSelectSession, onNewChat }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, leftPanelExpanded = true, onToggleLeftPanel, messages, manageProjectsOpen = false, onToggleManageProjects, sessions, setSessions, activeSessionId, onSelectSession, onNewChat }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
@@ -162,9 +162,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
             <div className="flex flex-1 min-w-0 items-center gap-4 overflow-hidden">
                 <button
                     className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white p-1 transition-all duration-200 hover:border-blue-500 hover:bg-gray-50"
+                    onClick={onToggleLeftPanel}
                     title="Toggle Sidebar"
                 >
-                    <PanelIcon size={20} stroke={"#6b7280"} />
+                    <PanelIcon size={20} stroke={leftPanelExpanded ? "#2563eb" : "#6b7280"} />
                 </button>
 
                 <span className="flex-shrink-0 text-base font-semibold text-gray-900">

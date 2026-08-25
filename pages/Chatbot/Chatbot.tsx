@@ -204,6 +204,8 @@ const Chatbot: React.FC = () => {
         <ChatHeader
           drawerOpen={open}
           onDrawerToggle={() => setOpen(!open)}
+          leftPanelExpanded={leftPanelExpanded}
+          onToggleLeftPanel={() => setLeftPanelExpanded((v) => !v)}
           messages={messages}
           manageProjectsOpen={manageProjectsOpen}
           onToggleManageProjects={() => setManageProjectsOpen((v) => !v)}
@@ -219,14 +221,16 @@ const Chatbot: React.FC = () => {
           overflow: 'hidden',
         }}>
           {showHistory ? (
-            <HistorySidebar
-              selectedSessionId={selectedSessionId ?? currentSession}
-              onSelectSession={handleSelectSession}
-              onNewChat={handleNewChat}
-              reloadToken={historyReloadToken}
-              onCountChange={handleSessionsCount}
-              messages={messages}
-            />
+            leftPanelExpanded && (
+              <HistorySidebar
+                selectedSessionId={selectedSessionId ?? currentSession}
+                onSelectSession={handleSelectSession}
+                onNewChat={handleNewChat}
+                reloadToken={historyReloadToken}
+                onCountChange={handleSessionsCount}
+                messages={messages}
+              />
+            )
           ) : leftPanelExpanded && JSModule?.leftPanelHtml ? (
             <div
               className={styles?.['sidebar']}

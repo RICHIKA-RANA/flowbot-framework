@@ -31,6 +31,32 @@ interface ChatMessageProps {
 
 const TokenUsagePill: React.FC<{ usage?: TokenUsage }> = ({ usage }) => {
     const [open, setOpen] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!open) return;
+
+        const handleOutsideClick = (event: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+                setOpen(false);
+            }
+        };
+
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscape);
+
+        return () => {
+            document.removeEventListener('mousedown', handleOutsideClick);
+            document.removeEventListener('keydown', handleEscape);
+        };
+    }, [open]);
+
     if (!usage) return null;
     const input = usage.input_tokens ?? 0;
     const output = usage.output_tokens ?? 0;
@@ -38,10 +64,12 @@ const TokenUsagePill: React.FC<{ usage?: TokenUsage }> = ({ usage }) => {
     if (!total) return null;
     const fmt = (n: number) => n.toLocaleString();
     return (
-        <div className="relative inline-block">
+        <div ref={containerRef} className="relative inline-block">
             <button
                 type="button"
-                onClick={() => setOpen(!open)}
+                aria-expanded={open}
+                aria-haspopup="dialog"
+                onClick={() => setOpen((prev) => !prev)}
                 className="inline-flex h-9 items-center gap-2 border border-blue-500 rounded-md bg-white px-3 text-sm text-blue-600 font-medium hover:bg-blue-50"
             >
                 <BarChart2 size={16} />

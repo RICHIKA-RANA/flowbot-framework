@@ -63,6 +63,7 @@ export interface ChatHeaderProps {
   activeSessionId?: string | null;
   onSelectSession?: (sessionId: string) => void;
   onNewChat?: () => void;
+  totalTokensOverride?: number | null;
 }
 
 export interface ChatTabsProps {

@@ -45,4 +45,5 @@ export interface HistorySidebarProps {
 
 export interface PastConversationProps {
     sessionId: string;
+    onTokensChange?: (total: number | null) => void;
 }

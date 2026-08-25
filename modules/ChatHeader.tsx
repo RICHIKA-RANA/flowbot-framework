@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
+import React, { useState, useContext, useEffect, useMemo, useRef } from 'react';
 import ThemeContext from '@/contexts/ThemeContext';
 import PanelIcon from '@/assets/svgs/PanelIcon';
 import ChevronDownIcon from '@/assets/svgs/ChevronDownIcon';
@@ -17,7 +17,7 @@ import FeedbackForm from '@/components/FeedbackForm';
 import { FeedbackPayload } from '@/types/feedback';
 import ChatTabs from './ChatTabs';
 
-export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, leftPanelExpanded = true, onToggleLeftPanel, messages, manageProjectsOpen = false, onToggleManageProjects, sessions, setSessions, activeSessionId, onSelectSession, onNewChat }) => {
+export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDrawerToggle, leftPanelExpanded = true, onToggleLeftPanel, messages, manageProjectsOpen = false, onToggleManageProjects, sessions, setSessions, activeSessionId, onSelectSession, onNewChat, totalTokensOverride }) => {
     const { JSModule, styles } = useContext(ThemeContext);
     const headerRef = useRef<HTMLDivElement>(null);
     const userMenuRef = useRef<HTMLDivElement>(null);
@@ -40,6 +40,12 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
 
         setCanShareChat(hasUserMessage && hasBotMessage);
     }, [messages, messages?.length]);
+
+    const liveTotalTokens = useMemo(
+        () => messages?.reduce((sum, msg) => sum + (msg.tokens?.total_tokens ?? 0), 0) ?? 0,
+        [messages]
+    );
+    const totalTokens = totalTokensOverride ?? liveTotalTokens;
 
     const copyToClipboard = async (text: string) => {
         if (navigator.clipboard) {
@@ -171,6 +177,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({ drawerOpen = false, onDr
                 <span className="flex-shrink-0 text-base font-semibold text-gray-900">
                     {JSModule?.botName || "AI Document Chat"}
                 </span>
+                {totalTokens > 0 && (
+                    <span
+                        className="flex-shrink-0 rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-500"
+                        title="Total tokens used across this conversation"
+                    >
+                        {totalTokens.toLocaleString()} tokens
+                    </span>
+                )}
                 <ChatTabs
                     messages={messages}
                     sessions={sessions || []}

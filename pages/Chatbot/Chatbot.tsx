@@ -14,7 +14,7 @@ import SuggestedQueries from '@/modules/SuggestedQueries';
 import HistorySidebar from '@/modules/HistorySidebar';
 import PastConversation from '@/modules/PastConversation';
 import { HistorySessionSummary } from '@/types/history';
-import { listHistorySessions } from '@/apiRequests';
+import { listHistorySessions, updateSessionStatus } from '@/apiRequests';
 import { GRAPH_IDS_CHANGED_EVENT, getCurrentSessionId } from '@/utils/sessionJobs';
 
 const Chatbot: React.FC = () => {
@@ -84,7 +84,12 @@ const Chatbot: React.FC = () => {
   }
 
   const handleNewChat = async () => {
-    if (!messages?.length) return
+    // abandoning an empty session -> close it instead of leaving a blank tab behind
+    const abandonedSessionId = getCurrentSessionId();
+    if (abandonedSessionId && !messages?.length) {
+      await updateSessionStatus(abandonedSessionId, 'INACTIVE');
+      setSessions((prev) => prev.filter((s) => s.sessionId !== abandonedSessionId));
+    }
     setSelectedSessionId(null);
     startNewChat()
     await showNewChatTab()
@@ -204,6 +209,8 @@ const Chatbot: React.FC = () => {
         <ChatHeader
           drawerOpen={open}
           onDrawerToggle={() => setOpen(!open)}
+          leftPanelExpanded={leftPanelExpanded}
+          onToggleLeftPanel={() => setLeftPanelExpanded((v) => !v)}
           messages={messages}
           manageProjectsOpen={manageProjectsOpen}
           onToggleManageProjects={() => setManageProjectsOpen((v) => !v)}
@@ -219,14 +226,15 @@ const Chatbot: React.FC = () => {
           overflow: 'hidden',
         }}>
           {showHistory ? (
-            <HistorySidebar
-              selectedSessionId={selectedSessionId ?? currentSession}
-              onSelectSession={handleSelectSession}
-              onNewChat={handleNewChat}
-              reloadToken={historyReloadToken}
-              onCountChange={handleSessionsCount}
-              messages={messages}
-            />
+            leftPanelExpanded && (
+              <HistorySidebar
+                selectedSessionId={selectedSessionId ?? currentSession}
+                onSelectSession={handleSelectSession}
+                onNewChat={handleNewChat}
+                reloadToken={historyReloadToken}
+                onCountChange={handleSessionsCount}
+              />
+            )
           ) : leftPanelExpanded && JSModule?.leftPanelHtml ? (
             <div
               className={styles?.['sidebar']}

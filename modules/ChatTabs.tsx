@@ -85,13 +85,7 @@ const ChatTabs: React.FC<ChatTabsProps> = ({ messages, sessions, setSessions, ac
             {
                 activeSessionId && (
                     <button
-                    className={`ml-1 flex h-9 w-9 shrink-0 items-center justify-center bg-gray-300 rounded
-                        ${
-                          !messages?.length
-                            ? "cursor-not-allowed opacity-50"
-                            : "cursor-pointer hover:bg-gray-400"
-                        }`}
-                        disabled={!messages?.length}
+                    className="ml-1 flex h-9 w-9 shrink-0 items-center justify-center bg-gray-300 rounded cursor-pointer hover:bg-gray-400"
                         title="New Tab"
                         onClick={onNewChat}
                     >

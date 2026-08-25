@@ -53,6 +53,8 @@ export interface SignInScreenProps {
 export interface ChatHeaderProps {
   drawerOpen?: boolean;
   onDrawerToggle?: () => void;
+  leftPanelExpanded?: boolean;
+  onToggleLeftPanel?: () => void;
   messages?: Message[]
   manageProjectsOpen?: boolean
   onToggleManageProjects?: () => void

@@ -1,4 +1,4 @@
-import { Message, TokenUsage } from "./chat";
+import { TokenUsage } from "./chat";
 
 export interface HistorySessionSummary {
     sessionId: string;
@@ -41,7 +41,6 @@ export interface HistorySidebarProps {
     onNewChat: () => void;
     reloadToken: number;
     onCountChange?: (count: number) => void;
-    messages: Message[];
 }
 
 export interface PastConversationProps {

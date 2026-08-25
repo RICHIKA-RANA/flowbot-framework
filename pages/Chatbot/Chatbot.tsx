@@ -49,6 +49,7 @@ const Chatbot: React.FC = () => {
 
   const showHistory = !!JSModule?.showHistory;
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [pastConversationTokens, setPastConversationTokens] = useState<number | null>(null);
   const [historyReloadToken, setHistoryReloadToken] = useState(0);
   const [hasPriorSessions, setHasPriorSessions] = useState(false);
   const [sessions, setSessions] = useState<HistorySessionSummary[]>([]);
@@ -219,6 +220,7 @@ const Chatbot: React.FC = () => {
           activeSessionId={selectedSessionId ?? currentSession}
           onSelectSession={handleSelectSession}
           onNewChat={handleNewChat}
+          totalTokensOverride={selectedSessionId ? pastConversationTokens : undefined}
         />
         <div style={{
           flex: 1,
@@ -261,7 +263,7 @@ const Chatbot: React.FC = () => {
               {
                 selectedSessionId ? (
                   <div style={{ flex: 1, overflow: 'auto', minWidth: 0 }}>
-                    <PastConversation sessionId={selectedSessionId} />
+                    <PastConversation sessionId={selectedSessionId} onTokensChange={setPastConversationTokens} />
                   </div>
                 ) : activeTabName === 'documentTree' ? (
                   <div

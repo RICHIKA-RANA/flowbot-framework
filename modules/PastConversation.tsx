@@ -46,7 +46,7 @@ const Footer: React.FC<{ documents: HistoryDocumentEntry[] }> = ({ documents }) 
 
 // Read-only view of a saved session: fetches it and replays the Q&A through
 // the shared ChatMessages UI, with a Sources + "past conversation" footer.
-const PastConversation: React.FC<PastConversationProps> = ({ sessionId }) => {
+const PastConversation: React.FC<PastConversationProps> = ({ sessionId, onTokensChange }) => {
     const [detail, setDetail] = useState<HistorySessionDetail | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -54,10 +54,13 @@ const PastConversation: React.FC<PastConversationProps> = ({ sessionId }) => {
         let alive = true;
         setLoading(true);
         setDetail(null);
+        onTokensChange?.(null);
         getHistorySession(sessionId).then((d) => {
             if (!alive) return;
             setDetail(d);
             setLoading(false);
+            const total = d?.chats.reduce((sum, chat) => sum + (chat.tokens?.total_tokens ?? 0), 0) ?? null;
+            onTokensChange?.(total);
         });
         return () => { alive = false; };
     }, [sessionId]);

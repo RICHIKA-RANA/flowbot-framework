@@ -49,6 +49,15 @@ const UploadDropZone: React.FC<UploadDropZoneProps> = ({
     );
 };
 
+const LONG_STAGE_HINT_SECONDS = 20;
+
+const formatElapsed = (seconds: number): string => {
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const rest = seconds % 60;
+    return rest ? `${minutes}m ${rest}s` : `${minutes}m`;
+};
+
 const UploadFileCard: React.FC<UploadFileCardProps> = ({
     styles, file, canCancel, cancelUpload, retryUpload, removeUpload
 }) => {
@@ -57,9 +66,17 @@ const UploadFileCard: React.FC<UploadFileCardProps> = ({
     const isError = isFailed || file.phase === 'cancelled';
     const isProcessing = file.phase === 'processing';
     const isCancelling = file.phase === 'cancelling'
+
+    const elapsedSeconds = file.startedAt ? Math.floor((Date.now() - file.startedAt) / 1000) : 0;
+    const showLongStageHint = isProcessing && elapsedSeconds >= LONG_STAGE_HINT_SECONDS;
+
+    const processingLabel = showLongStageHint
+        ? `${file.stage || 'Processing'} (${formatElapsed(elapsedSeconds)}) — large documents can take a while`
+        : (file.stage || 'Processing...');
+
     const statusLabel = isDone ? 'Upload complete'
         : isError ? (file.error || 'Failed to upload')
-        : isProcessing ? (file.stage || 'Processing...')
+        : isProcessing ? processingLabel
         : isCancelling ? 'Cancelling...'
         : 'Uploading...';
 
@@ -110,7 +127,15 @@ const UploadFileCard: React.FC<UploadFileCardProps> = ({
                     {statusLabel}
                 </div>
                 <div className={styles?.['fileErrorActions']}>
-                    {/* <button className={styles?.['fileRetryBtn']} onClick={() => retryUpload(file.name)}>↻ Retry</button> */}
+                    {file.jobId && isFailed && !file.synthetic && (
+                        <button
+                            className={styles?.['fileRetryBtn']}
+                            disabled={!!file.retrying}
+                            onClick={() => retryUpload(file.jobId)}
+                        >
+                            {file.retrying ? 'Retrying…' : '↻ Retry'}
+                        </button>
+                    )}
                     {
                         file.jobId && (
                             <button className={styles?.['fileRemoveBtn']} onClick={() => removeUpload(file.jobId)}>🗑 Remove</button>

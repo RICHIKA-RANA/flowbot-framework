@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState, useRef } from 'react';
-import { uploadDocument, getUploadConstraints, getJobProgress, cancelDocumentProcessing, listSessionDocuments, removeDocument } from '@/apiRequests/ttt';
+import { uploadDocument, getUploadConstraints, getJobProgress, cancelDocumentProcessing, listSessionDocuments, removeDocument, retryDocumentJob } from '@/apiRequests/ttt';
 import { UploadConstraintsResponse } from '@/types/fileUploadStatus';
 import ThemeContext from '@/contexts/ThemeContext';
 import { useRouter } from 'next/router';
@@ -190,6 +190,7 @@ export const useTainPDF = () => {
                 phase: raw?.state === 'CANCELLING' ? 'cancelling' : 'processing',
                 jobId: raw?.job_id,
                 graphId: raw?.result_graph_id || '',
+                startedAt: Date.now(),
             }));
 
         if (seeded.length) {
@@ -254,7 +255,7 @@ export const useTainPDF = () => {
         setUploads((prev: FileUploadStatus[]) =>
             prev.map((f) =>
                 f.name === fileName && !f.jobId
-                    ? { ...f, jobId: tempId, phase: 'error', error: message }
+                    ? { ...f, jobId: tempId, phase: 'error', error: message, synthetic: true }
                     : f
             )
         );
@@ -286,7 +287,8 @@ export const useTainPDF = () => {
             progress: 0,
             phase: 'uploading',
             jobId: '',
-            graphId: ''
+            graphId: '',
+            startedAt: Date.now(),
         };
         if (validationError) {
             setUploads((prev: FileUploadStatus[]) => [
@@ -345,8 +347,44 @@ export const useTainPDF = () => {
         }
     };
 
-    // TODO: extend this function once the retry upload option is added
-    const retryUpload = (fileName: string) => {};
+    const retryUpload = async (jobId: string) => {
+        if (!jobId) return;
+
+        const current = uploadsRef.current.find((f) => f.jobId === jobId);
+        if (!current || current.retrying) return;
+
+        setUploads((prev: FileUploadStatus[]) =>
+            prev.map((f) => (f.jobId === jobId ? { ...f, retrying: true } : f))
+        );
+
+        const result = await retryDocumentJob(jobId);
+
+        if (!result.ok) {
+            toast(result.message || 'Retry failed', { type: 'error' });
+            setUploads((prev: FileUploadStatus[]) =>
+                prev.map((f) => (f.jobId === jobId ? { ...f, retrying: false } : f))
+            );
+            return;
+        }
+
+        cancelledRef.current.delete(jobId);
+        setTrainingInProgress(true);
+        setUploads((prev: FileUploadStatus[]) =>
+            prev.map((f) =>
+                f.jobId === jobId
+                    ? {
+                        ...f,
+                        phase: 'processing',
+                        progress: 0,
+                        error: undefined,
+                        stage: undefined,
+                        retrying: false,
+                        startedAt: Date.now(),
+                    }
+                    : f
+            )
+        );
+    };
 
     const removeUpload = (jobId: string) => {
         cancelledRef.current.delete(jobId);

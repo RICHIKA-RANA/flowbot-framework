@@ -33,19 +33,19 @@ export interface UploadDropZoneProps {
 export interface UploadFileCardProps {
     styles: any;
     file: any;
-    canCancel: (name: string) => boolean;
-    cancelUpload: (name: string) => void;
-    retryUpload: (name: string) => void;
-    removeUpload: (name: string) => void;
+    canCancel: (jobId: string) => boolean;
+    cancelUpload: (jobId: string) => void;
+    retryUpload: (jobId: string) => void;
+    removeUpload: (jobId: string) => void;
 }
 
 export interface UploadsSectionProps {
     styles: any;
     uploads: any[];
-    canCancel: (name: string) => boolean;
-    cancelUpload: (name: string) => void;
-    retryUpload: (name: string) => void;
-    removeUpload: (name: string) => void;
+    canCancel: (jobId: string) => boolean;
+    cancelUpload: (jobId: string) => void;
+    retryUpload: (jobId: string) => void;
+    removeUpload: (jobId: string) => void;
 }
 
 export interface TrainedDocumentsProps {

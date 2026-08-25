@@ -1,5 +1,7 @@
 import { axiosTTTInstance } from "@/utils/axiosInstance"
 
+const UPLOAD_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_UPLOAD_TIMEOUT_MS) || 20 * 60 * 1000;
+
 export const uploadDocument = async (file: File, jobSessionId?: string, projectId?: string) => {
     try {
         const formData = new FormData();
@@ -11,7 +13,7 @@ export const uploadDocument = async (file: File, jobSessionId?: string, projectI
             formData.append('project_id', projectId);
         }
         const response = await axiosTTTInstance.post(`/v1/documents`, formData, {
-            timeout: 5 * 60 * 1000,
+            timeout: UPLOAD_TIMEOUT_MS,
         });
         return response?.data;
     } catch (error: any) {
@@ -20,6 +22,9 @@ export const uploadDocument = async (file: File, jobSessionId?: string, projectI
             status: error?.response?.status,
             responseData: error?.response?.data
         });
+        if (error?.code === 'ECONNABORTED' && !error?.response) {
+            return { error_message: 'Upload timed out before the file finished transferring. Check your connection and try again.' };
+        }
         const detail = error?.response?.data?.detail;
         return { error_message: typeof detail === 'string' ? detail : detail?.message };
     }
@@ -42,6 +47,27 @@ export const getUploadConstraints = async () => {
             responseData: error?.response?.data
         });
         return false;
+    }
+}
+
+export const retryDocumentJob = async (jobId: string) => {
+    try {
+        const response = await axiosTTTInstance.post(`/v1/jobs/${encodeURIComponent(jobId)}/retry`, undefined, {
+            timeout: 20000,
+        });
+        return { ok: true, data: response?.data };
+    } catch (error: any) {
+        console.log(`Error retrying document job with jobid: ${jobId}`, {
+            message: error?.message,
+            status: error?.response?.status,
+            responseData: error?.response?.data
+        });
+        const detail = error?.response?.data?.detail;
+        return {
+            ok: false,
+            status: error?.response?.status,
+            message: typeof detail === 'string' ? detail : (detail?.message || 'Retry failed'),
+        };
     }
 }
 

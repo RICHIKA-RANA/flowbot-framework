@@ -10,6 +10,9 @@ export type FileUploadStatus = {
     graphId?: string;
     error?: string;
     stage?: string;
+    startedAt?: number;
+    retrying?: boolean;
+    synthetic?: boolean;
 };
 
 export type SessionDocument = {

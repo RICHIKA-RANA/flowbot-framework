@@ -16,6 +16,7 @@ declare module 'react-pdf' {
       renderAnnotationLayer?: boolean;
       renderTextLayer?: boolean;
       customTextRenderer?: (layer: { str: string; itemIndex: number }) => string;
+      onLoadError?: (error: Error) => void;
     }
   
     export const Document: ComponentType<DocumentProps>;

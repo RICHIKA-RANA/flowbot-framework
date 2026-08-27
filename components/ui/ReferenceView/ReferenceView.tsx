@@ -41,6 +41,11 @@ export const fileErrorMessage = (
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+const clampPage = (page: number, numPages: number): number => {
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  return numPages > 0 ? Math.min(safePage, numPages) : safePage;
+};
+
 const PdfViewer: React.FC<PdfViewerProps> = ({
   fileUrl: pdfUrl,
   fileError,
@@ -53,7 +58,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 }) => {
   const [renderFailed, setRenderFailed] = useState<boolean>(false);
   const [numPages, setNumPages] = useState<number>(0);
-  const [currentPage, setCurrentPage] = useState<number>(pageNumber || 1);
+  const [currentPage, setCurrentPage] = useState<number>(clampPage(pageNumber, 0));
   const [zoom, setZoom] = useState<number>(100);
   const pageAreaRef = useRef<HTMLDivElement>(null);
   const [fitWidth, setFitWidth] = useState<number>(600);
@@ -193,7 +198,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
         {pdfUrl && (
           <Document
             file={pdfUrl}
-            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+            onLoadSuccess={({ numPages }) => {
+              setNumPages(numPages);
+              setCurrentPage((page) => clampPage(page, numPages));
+            }}
             onLoadError={() => setRenderFailed(true)}
           >
             <div className={styles.page}>
@@ -202,6 +210,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 width={Math.round((fitWidth * zoom) / 100)}
                 customTextRenderer={customTextRenderer}
                 renderAnnotationLayer={false}
+                onLoadError={() =>
+                  setCurrentPage((page) => clampPage(page, numPages))
+                }
               />
             </div>
           </Document>

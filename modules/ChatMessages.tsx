@@ -17,6 +17,14 @@ import SourcePanel from "./SourcePanel";
 import { getDocumentFile } from "@/apiRequests/ttt";
 import { DocumentFileError } from "@/types/ui";
 
+const NO_ANSWER_PATTERNS = [
+    "don't cover this",
+    "don't have an answer for that",
+];
+
+const isNoAnswerMessage = (text?: string) =>
+    !!text && NO_ANSWER_PATTERNS.some((pattern) => text.toLowerCase().includes(pattern));
+
 interface ChatMessageProps {
     chatId: string;
     typingState: boolean
@@ -234,8 +242,9 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
 
                     {/* TODO: Move Icon to conf */}
                     {messages.map((message, index) => {
+                            const hasSources = !!message?.sourceDocs?.length && !isNoAnswerMessage(message?.message);
                             const hasFooter = message?.type === 'apiMessage' &&
-                                (message?.tokens || (message?.sourceDocs && message.sourceDocs.length > 0));
+                                (message?.tokens || hasSources);
                             let icon;
                             let className;
                             if (message.type === 'apiMessage') {
@@ -410,7 +419,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                                             }}
                                                           >
                                                             {message?.tokens && <TokenUsagePill usage={message.tokens} />}
-                                                            {message?.sourceDocs && message.sourceDocs.length > 0 && (
+                                                            {hasSources && (
                                                               <button
                                                                 className={`${styles.referenceButton}`}
                                                                 style={{ position: 'static', height: 36 }}

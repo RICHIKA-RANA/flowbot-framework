@@ -500,7 +500,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                             fileTypeKey({ title: openedSource.metadata?.filename })
                         ) ? (
                             <DocxViewer
-                                key={`${openedGraphId}:${openedSource.pageContent}`}
+                                key={openedGraphId}
                                 fileUrl={fileUrl}
                                 fileError={fileError}
                                 highlight={openedSource.pageContent}

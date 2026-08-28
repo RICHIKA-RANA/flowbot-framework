@@ -3,6 +3,8 @@ import You from "@/assets/svgs/You";
 import ToolTip from "@/assets/svgs/icons/ToolTip";
 import LoadingDots from "@/components/ui/LoadingDots";
 import ReferenceViewer from "@/components/ui/ReferenceView/ReferenceView";
+import DocxViewer from "@/components/ui/ReferenceView/DocxViewer";
+import { fileTypeKey } from "@/utils/fileType";
 import ThemeContext from "@/contexts/ThemeContext";
 import Image from "next/image";
 import { Fragment, useContext, useRef, useEffect, useState } from "react";
@@ -494,6 +496,23 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
             {
                 JSModule?.referenceDocumentViewEnabled && openedGraphId && openedSource && (
                     <div style={documentColumnStyle(docExpanded)}>
+                        {['docx', 'doc'].includes(
+                            fileTypeKey({ title: openedSource.metadata?.filename })
+                        ) ? (
+                            <DocxViewer
+                                key={`${openedGraphId}:${openedSource.pageContent}`}
+                                fileUrl={fileUrl}
+                                fileError={fileError}
+                                highlight={openedSource.pageContent}
+                                fileName={openedSource.metadata?.filename}
+                                expanded={docExpanded}
+                                onToggleExpand={() => setDocExpanded(prev => !prev)}
+                                onClose={() => {
+                                    setOpenedSource(null);
+                                    setDocExpanded(false);
+                                }}
+                            />
+                        ) : (
                         <ReferenceViewer
                             key={`${openedGraphId}:${openedSource.metadata?.pageNumber}`}
                             fileUrl={fileUrl}
@@ -508,6 +527,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                 setDocExpanded(false);
                             }}
                         />
+                    )}
                     </div>
                 )
             }

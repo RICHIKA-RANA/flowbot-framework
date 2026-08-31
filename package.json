@@ -74,7 +74,7 @@
     "react-new-window": "^1.0.1",
     "react-pdf": "^6.2.2",
     "react-search-autocomplete": "^8.5.2",
-    "react-toastify": "^10.0.5",
+    "react-toastify": "^11.1.0",
     "rehype-raw": "^7.0.0",
     "rsuite": "^5.53.2",
     "sharp": "^0.33.1",

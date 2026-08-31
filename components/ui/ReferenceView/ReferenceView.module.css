@@ -194,6 +194,12 @@
     min-width: 54px;
 }
 
+.pageWarning {
+    font-size: 12px;
+    color: #b45309;
+    white-space: nowrap;
+}
+
 .pageArea {
     flex: 1;
     min-height: 0;

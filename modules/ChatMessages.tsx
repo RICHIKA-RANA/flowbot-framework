@@ -234,8 +234,9 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
 
                     {/* TODO: Move Icon to conf */}
                     {messages.map((message, index) => {
+                            const hasSources = !!message?.sourceDocs?.length;
                             const hasFooter = message?.type === 'apiMessage' &&
-                                (message?.tokens || (message?.sourceDocs && message.sourceDocs.length > 0));
+                                (message?.tokens || hasSources);
                             let icon;
                             let className;
                             if (message.type === 'apiMessage') {
@@ -410,7 +411,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
                                                             }}
                                                           >
                                                             {message?.tokens && <TokenUsagePill usage={message.tokens} />}
-                                                            {message?.sourceDocs && message.sourceDocs.length > 0 && (
+                                                            {hasSources && (
                                                               <button
                                                                 className={`${styles.referenceButton}`}
                                                                 style={{ position: 'static', height: 36 }}

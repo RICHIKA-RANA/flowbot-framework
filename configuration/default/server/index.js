@@ -69,7 +69,7 @@ export const start = async (handler, question) => {
     }).find((item) => item.id == currentStep);
     if (answ === undefined)
       return {
-        text: 'Chatbot flow ended!',
+        text: "Sorry, I don't have an answer for that.",
         currentStep: {
           inputHidden: true,
         },
@@ -104,7 +104,7 @@ export const start = async (handler, question) => {
       }).find((item) => item.id == nextStep);
       if (answ === undefined)
         return {
-          text: 'Chatbot flow ended!',
+          text: "Sorry, I don't have an answer for that.",
           currentStep: {
             inputHidden: true,
           },

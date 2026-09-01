@@ -526,7 +526,7 @@ export const start = async (handler, question) => {
 
     if (answ === undefined)
       return {
-        text: 'Chatbot flow ended!',
+        text: "Sorry, I don't have an answer for that.",
         currentStep: {
           inputHidden: true,
         },

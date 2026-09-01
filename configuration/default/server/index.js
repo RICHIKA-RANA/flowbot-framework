@@ -62,7 +62,7 @@ export const start = async (handler, question) => {
         tokenUser = res.data;
       } catch (error) {}
     }
-    let currentStep = await handler.user.getlastStep();
+    let currentStep = handler.user?.getlastStep ? await handler.user.getlastStep() : undefined;
     let answ = ChatBotStep({
       chatBotId,
       tokenUser,

@@ -191,46 +191,56 @@ export default async function handler(
         })
         .catch((error) => {
     // Fallback to default server config when chatbot-specific one is missing
-          import(`@/configuration/default/server`).then(async (module) => {
-            const response = await module.start(
-              {
-                chain,
-                axiosInstance: axios,
-                user,
-                graphIds,
-                BigQuery,
-                DocumentProcessorServiceClient,
-                GoogleAuth,
-                fs,
-                path,
-                FormData,
-                reqQuery,
-                chatBotId,
-                headers,
-                parser,
-                generator,
-                json5,
-                htmlToText,
-              },
-              sanitizedQuestion,
-            );
+          import(`@/configuration/default/server`)
+            .then(async (module) => {
+              try {
+                const response = await module.start(
+                  {
+                    chain,
+                    axiosInstance: axios,
+                    user,
+                    graphIds,
+                    BigQuery,
+                    DocumentProcessorServiceClient,
+                    GoogleAuth,
+                    fs,
+                    path,
+                    FormData,
+                    reqQuery,
+                    chatBotId,
+                    headers,
+                    parser,
+                    generator,
+                    json5,
+                    htmlToText,
+                  },
+                  sanitizedQuestion,
+                );
 
-        // Save Q&A — fallback path
-        if (sanitizedQuestion && response?.text) {
-            await saveChatHistory(
-                session,
-                chatBotId,
-                user,
-                sanitizedQuestion,
-                response.text,
-                graphIds || [],
-                response.tokens
-            );
-        }
+            // Save Q&A — fallback path
+            if (sanitizedQuestion && response?.text) {
+                await saveChatHistory(
+                    session,
+                    chatBotId,
+                    user,
+                    sanitizedQuestion,
+                    response.text,
+                    graphIds || [],
+                    response.tokens
+                );
+            }
 
-            res.status(200).json(response);
-            resolve(response);
-          });
+                res.status(200).json(response);
+                resolve(response);
+              } catch (fallbackError: any) {
+                res.status(500).json({ error: fallbackError?.message || 'Something went wrong' });
+                resolve(fallbackError);
+              }
+            })
+            .catch((importError) => {
+              res.status(500).json({ error: 'Chat service unavailable' });
+              resolve(importError);
+            });
         });
     });
   } catch (error: any) {

@@ -137,55 +137,93 @@ export default async function handler(
     return new Promise((resolve) => {
       import(`@/configuration/${chatBotId}/server`)
         .then(async (module) => {
+          const handlerObj = {
+            chain,
+            axiosInstance: axios,
+            user,
+            graphIds,
+            BigQuery,
+            DocumentProcessorServiceClient,
+            GoogleAuth,
+            fs,
+            path,
+            FormData,
+            reqQuery,
+            reqBody: req.body,
+            chatBotId,
+            headers,
+            parser,
+            generator,
+            json5,
+            htmlToText,
+          };
+
+          const isStreaming = Boolean(module.streaming);
+          if (isStreaming) {
+            res.writeHead(200, {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache, no-transform',
+              Connection: 'keep-alive',
+            });
+            res.flushHeaders();
+          }
+
+          const sendFinal = (payload: any) => {
+            res.write(`data: ${JSON.stringify({ type: 'final', payload })}\n\n`);
+            res.end();
+          };
+
           try {
+            const onToken = isStreaming
+              ? (chunk: string) =>
+                  res.write(`data: ${JSON.stringify({ type: 'token', chunk })}\n\n`)
+              : undefined;
+
             const response = await module.start(
-              {
-                chain,
-                axiosInstance: axios,
-                user,
-                graphIds,
-                BigQuery,
-                DocumentProcessorServiceClient,
-                GoogleAuth,
-                fs,
-                path,
-                FormData,
-                reqQuery,
-                reqBody: req.body,
-                chatBotId,
-                headers,
-                parser,
-                generator,
-                json5,
-                htmlToText,
-              },
+              handlerObj,
               sanitizedQuestion,
+              onToken,
             );
 
             // Save Q&A only when there is an actual question and answer
             if (sanitizedQuestion && response?.text) {
-                await saveChatHistory(
-                    session,
-                    chatBotId,
-                    user,
-                    sanitizedQuestion,
-                    response.text,
-                    graphIds || [],
-                    response.tokens
-                );
+              await saveChatHistory(
+                session,
+                chatBotId,
+                user,
+                sanitizedQuestion,
+                response.text,
+                graphIds || [],
+                response.tokens,
+              );
             }
 
-            res.status(200).json(response);
+            if (isStreaming) {
+              sendFinal(response);
+            } else {
+              res.status(200).json(response);
+            }
             resolve(response);
           } catch (error: any) {
-            const upstream = error?.status ?? error?.response?.status;
-            const status =
-              Number.isInteger(upstream) && upstream >= 400 && upstream <= 599
-                ? upstream
-                : 500;
-            res
-              .status(status)
-              .json({ error: error?.message || 'Something went wrong' });
+            if (isStreaming) {
+              // Headers are already flushed with a 200 — the error has to travel
+              // in-band, same as the frontend already treats `data.error` today.
+              sendFinal({
+                text: '',
+                src: 'talkingDb',
+                error: true,
+                errorMessage: error?.message || 'Something went wrong',
+              });
+            } else {
+              const upstream = error?.status ?? error?.response?.status;
+              const status =
+                Number.isInteger(upstream) && upstream >= 400 && upstream <= 599
+                  ? upstream
+                  : 500;
+              res
+                .status(status)
+                .json({ error: error?.message || 'Something went wrong' });
+            }
             resolve(error);
           }
         })

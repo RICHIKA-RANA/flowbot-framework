@@ -185,8 +185,8 @@ export default async function handler(
               onToken,
             );
 
-            // Save Q&A only when there is an actual question and answer
-            if (sanitizedQuestion && response?.text) {
+            // Save Q&A only when there is an actual question and answer, and the
+            if (sanitizedQuestion && response?.text && !res.destroyed) {
                 await saveChatHistory(
                     session,
                     chatBotId,

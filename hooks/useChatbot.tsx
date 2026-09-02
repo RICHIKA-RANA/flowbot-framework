@@ -472,6 +472,8 @@ export const useChatbot = () => {
                 }
             }
             setQuery('');
+            let pushed = false;
+            const streamId = Math.random();
             try {
                 // private mode -> session graph ids; public mode -> active demo doc graph
                 const allGraphIds = resolveGraphIds()
@@ -508,8 +510,6 @@ export const useChatbot = () => {
                     throw new Error(`Chat request failed: ${response.status}`);
                 }
                 let data: any;
-                let pushed = false;
-                const streamId = Math.random();
 
                 if (response.headers.get('content-type')?.startsWith('text/event-stream') && response.body) {
                     const reader = response.body.getReader();
@@ -527,7 +527,13 @@ export const useChatbot = () => {
                         for (const frame of frames) {
                             const line = frame.trim();
                             if (!line.startsWith('data: ')) continue;
-                            const evt = JSON.parse(line.slice(6));
+                            let evt: any;
+                            try {
+                                evt = JSON.parse(line.slice(6));
+                            } catch {
+                                console.error('Discarding malformed SSE frame', line);
+                                continue;
+                            }
 
                             if (evt.type === 'token') {
                                 setMessageState((state: any) => ({
@@ -552,6 +558,9 @@ export const useChatbot = () => {
                                 data = evt.payload;
                             }
                         }
+                    }
+                    if (!data) {
+                        throw new Error('Stream ended before the final frame');
                     }
                 } else {
                     data = await response.json();
@@ -756,6 +765,14 @@ export const useChatbot = () => {
                 removeAuthTokenFromURL()
             } catch (error) {
                 setLoading(false);
+                if (pushed) {
+                    setMessageState((state: any) => ({
+                        ...state,
+                        messages: state.messages.map((m: any) =>
+                            m.id === streamId ? { ...m, isStreaming: false } : m
+                        ),
+                    }));
+                }
                 console.error('Chat request failed:', error);
             }
         }

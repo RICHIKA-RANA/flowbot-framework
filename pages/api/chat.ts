@@ -169,14 +169,17 @@ export default async function handler(
           }
 
           const sendFinal = (payload: any) => {
+            if (res.destroyed) return;
             res.write(`data: ${JSON.stringify({ type: 'final', payload })}\n\n`);
             res.end();
           };
 
           try {
             const onToken = isStreaming
-              ? (chunk: string) =>
-                  res.write(`data: ${JSON.stringify({ type: 'token', chunk })}\n\n`)
+              ? (chunk: string) => {
+                  if (res.destroyed) throw new Error('Client disconnected');
+                  res.write(`data: ${JSON.stringify({ type: 'token', chunk })}\n\n`);
+                }
               : undefined;
 
             const response = await module.start(
@@ -205,6 +208,10 @@ export default async function handler(
             }
             resolve(response);
           } catch (error: any) {
+            if (res.destroyed) {
+              resolve(error);
+              return;
+            }
             if (isStreaming) {
               // Headers are already flushed with a 200 — the error has to travel
               // in-band, same as the frontend already treats `data.error` today.

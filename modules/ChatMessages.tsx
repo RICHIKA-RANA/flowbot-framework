@@ -18,6 +18,7 @@ import { Document } from "langchain/document";
 import SourcePanel from "./SourcePanel";
 import { getDocumentFile } from "@/apiRequests/ttt";
 import { DocumentFileError } from "@/types/ui";
+import { isDocx } from "@/components/ui/ReferenceView/ReferenceView";
 
 interface ChatMessageProps {
     chatId: string;
@@ -496,9 +497,7 @@ export const ChatMessages: React.FC<ChatMessageProps> = ({ chatId, messages, loa
             {
                 JSModule?.referenceDocumentViewEnabled && openedGraphId && openedSource && (
                     <div style={documentColumnStyle(docExpanded)}>
-                        {['docx', 'doc'].includes(
-                            fileTypeKey({ title: openedSource.metadata?.filename })
-                        ) ? (
+                        { isDocx(openedSource.metadata?.filename ) ? (
                             <DocxViewer
                                 key={openedGraphId}
                                 fileUrl={fileUrl}

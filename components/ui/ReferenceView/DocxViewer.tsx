@@ -66,6 +66,7 @@ const DocxViewer: React.FC<DocxViewerProps> = ({
           ignoreHeight: false,
           breakPages: true,
           experimental: true,
+          renderAltChunks: false,
         });
         if (cancelled || !contentRef.current) return;
 

@@ -75,15 +75,13 @@ export const highlightInContainer = (
   // outscore a stray short word found elsewhere in the document.
   const primary = matches.reduce((best, m) => (m.overlap > best.overlap ? m : best), matches[0]);
 
-  matches.forEach((m) => {
-    const mark = document.createElement('mark');
-    mark.setAttribute(HIGHLIGHT_ATTR, 'true');
-    if (m === primary) mark.setAttribute(PRIMARY_ATTR, 'true');
-    mark.textContent = m.value;
-    m.node.parentNode?.replaceChild(mark, m.node);
-  });
+  const mark = document.createElement('mark');
+  mark.setAttribute(HIGHLIGHT_ATTR, 'true');
+  mark.setAttribute(PRIMARY_ATTR, 'true');
+  mark.textContent = primary.value;
+  primary.node.parentNode?.replaceChild(mark, primary.node);
 
-  return matches.length;
+  return 1;
 };
 
 // Returns the best-scoring highlight mark 

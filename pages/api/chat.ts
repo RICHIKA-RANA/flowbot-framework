@@ -137,33 +137,11 @@ export default async function handler(
     return new Promise((resolve) => {
       import(`@/configuration/${chatBotId}/server`)
         .then(async (module) => {
-          const handlerObj = {
-            chain,
-            axiosInstance: axios,
-            user,
-            graphIds,
-            BigQuery,
-            DocumentProcessorServiceClient,
-            GoogleAuth,
-            fs,
-            path,
-            FormData,
-            reqQuery,
-            reqBody: req.body,
-            chatBotId,
-            headers,
-            parser,
-            generator,
-            json5,
-            htmlToText,
-          };
-
           const isStreaming = Boolean(module.streaming);
           if (isStreaming) {
             res.writeHead(200, {
               'Content-Type': 'text/event-stream; charset=utf-8',
               'Cache-Control': 'no-cache, no-transform',
-              Connection: 'keep-alive',
             });
             res.flushHeaders();
           }
@@ -183,22 +161,41 @@ export default async function handler(
               : undefined;
 
             const response = await module.start(
-              handlerObj,
+              {
+                chain,
+                axiosInstance: axios,
+                user,
+                graphIds,
+                BigQuery,
+                DocumentProcessorServiceClient,
+                GoogleAuth,
+                fs,
+                path,
+                FormData,
+                reqQuery,
+                reqBody: req.body,
+                chatBotId,
+                headers,
+                parser,
+                generator,
+                json5,
+                htmlToText,
+              },
               sanitizedQuestion,
               onToken,
             );
 
             // Save Q&A only when there is an actual question and answer
             if (sanitizedQuestion && response?.text) {
-              await saveChatHistory(
-                session,
-                chatBotId,
-                user,
-                sanitizedQuestion,
-                response.text,
-                graphIds || [],
-                response.tokens,
-              );
+                await saveChatHistory(
+                    session,
+                    chatBotId,
+                    user,
+                    sanitizedQuestion,
+                    response.text,
+                    graphIds || [],
+                    response.tokens
+                );
             }
 
             if (isStreaming) {
@@ -208,10 +205,6 @@ export default async function handler(
             }
             resolve(response);
           } catch (error: any) {
-            if (res.destroyed) {
-              resolve(error);
-              return;
-            }
             if (isStreaming) {
               // Headers are already flushed with a 200 — the error has to travel
               // in-band, same as the frontend already treats `data.error` today.

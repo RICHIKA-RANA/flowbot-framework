@@ -472,8 +472,6 @@ export const useChatbot = () => {
                 }
             }
             setQuery('');
-            let pushed = false;
-            const streamId = Math.random();
             try {
                 // private mode -> session graph ids; public mode -> active demo doc graph
                 const allGraphIds = resolveGraphIds()
@@ -510,6 +508,8 @@ export const useChatbot = () => {
                     throw new Error(`Chat request failed: ${response.status}`);
                 }
                 let data: any;
+                let pushed = false;
+                const streamId = Math.random();
 
                 if (response.headers.get('content-type')?.startsWith('text/event-stream') && response.body) {
                     const reader = response.body.getReader();
@@ -548,7 +548,6 @@ export const useChatbot = () => {
                                                   type: 'apiMessage',
                                                   message: evt.chunk,
                                                   src: 'talkingDb',
-                                                  isStreaming: true,
                                                   id: streamId,
                                               },
                                           ],
@@ -744,7 +743,7 @@ export const useChatbot = () => {
                         ...state,
                         messages: pushed
                             ? state.messages.map((m: any) =>
-                                  m.id === streamId ? { ...m, ...apiMessage, isStreaming: false } : m
+                                  m.id === streamId ? { ...m, ...apiMessage } : m
                               )
                             : [
                                   ...state.messages,
@@ -765,14 +764,6 @@ export const useChatbot = () => {
                 removeAuthTokenFromURL()
             } catch (error) {
                 setLoading(false);
-                if (pushed) {
-                    setMessageState((state: any) => ({
-                        ...state,
-                        messages: state.messages.map((m: any) =>
-                            m.id === streamId ? { ...m, isStreaming: false } : m
-                        ),
-                    }));
-                }
                 console.error('Chat request failed:', error);
             }
         }

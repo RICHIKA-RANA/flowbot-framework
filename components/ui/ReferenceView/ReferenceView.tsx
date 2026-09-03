@@ -241,7 +241,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   );
 };
 
-const isDocx = (fileName?: string) =>
+export const isDocx = (fileName?: string) =>
   !!fileName && /\.docx?$/i.test(fileName);
 
 const ReferenceViewer: React.FC<PdfViewerProps> = (props) =>

@@ -76,7 +76,10 @@ const DocxViewer: React.FC<DocxViewerProps> = ({
         pagesRef.current = pages;
         setNumPages(pages.length || 1);
       } catch (err) {
-        if (!cancelled) setRenderFailed(true);
+        if (!cancelled) {
++         console.error('DocxViewer render failed:', err);
++         setRenderFailed(true);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

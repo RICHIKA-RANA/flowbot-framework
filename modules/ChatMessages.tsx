@@ -4,7 +4,6 @@ import ToolTip from "@/assets/svgs/icons/ToolTip";
 import LoadingDots from "@/components/ui/LoadingDots";
 import ReferenceViewer from "@/components/ui/ReferenceView/ReferenceView";
 import DocxViewer from "@/components/ui/ReferenceView/DocxViewer";
-import { fileTypeKey } from "@/utils/fileType";
 import ThemeContext from "@/contexts/ThemeContext";
 import Image from "next/image";
 import { Fragment, useContext, useRef, useEffect, useState } from "react";

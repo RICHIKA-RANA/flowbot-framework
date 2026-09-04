@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
+import DocxViewer from './DocxViewer';
 import {
   ChevronLeft,
   ChevronRight,
@@ -240,4 +241,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   );
 };
 
-export default PdfViewer;
+export const isDocx = (fileName?: string) =>
+  !!fileName && /\.docx?$/i.test(fileName);
+
+const ReferenceViewer: React.FC<PdfViewerProps> = (props) =>
+  isDocx(props.fileName) ? <DocxViewer {...props} /> : <PdfViewer {...props} />;
+
+export default ReferenceViewer;

@@ -48,7 +48,7 @@ export const highlightInContainer = (
   }
 
   // Phase 1: find every qualifying run without mutating the DOM yet, so we
-  // can compare them all before deciding which one is "the" match.
+  // can compare them all before deciding which one is "the" primary match.
   const matches: { node: Text; value: string; overlap: number }[] = [];
   textNodes.forEach((node) => {
     const value = node.nodeValue || '';
@@ -71,17 +71,21 @@ export const highlightInContainer = (
   if (matches.length === 0) return 0;
 
   // The run with the largest actual overlap is the best proxy for "the
-  // passage that was really cited" — a whole matching paragraph will always
-  // outscore a stray short word found elsewhere in the document.
+  // passage that was really cited" — used to decide where to scroll/which
+  // page to report, not to decide what gets highlighted. Every qualifying
+  // run is highlighted; a citation spanning multiple DOM text nodes lights
+  // up in full instead of only its single best-scoring fragment.
   const primary = matches.reduce((best, m) => (m.overlap > best.overlap ? m : best), matches[0]);
 
-  const mark = document.createElement('mark');
-  mark.setAttribute(HIGHLIGHT_ATTR, 'true');
-  mark.setAttribute(PRIMARY_ATTR, 'true');
-  mark.textContent = primary.value;
-  primary.node.parentNode?.replaceChild(mark, primary.node);
+  matches.forEach((m) => {
+    const mark = document.createElement('mark');
+    mark.setAttribute(HIGHLIGHT_ATTR, 'true');
+    if (m === primary) mark.setAttribute(PRIMARY_ATTR, 'true');
+    mark.textContent = m.value;
+    m.node.parentNode?.replaceChild(mark, m.node);
+  });
 
-  return 1;
+  return matches.length;
 };
 
 // Returns the best-scoring highlight mark 

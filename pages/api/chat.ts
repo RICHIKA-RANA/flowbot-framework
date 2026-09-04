@@ -137,7 +137,29 @@ export default async function handler(
     return new Promise((resolve) => {
       import(`@/configuration/${chatBotId}/server`)
         .then(async (module) => {
+          const isStreaming = Boolean(module.streaming);
+          if (isStreaming) {
+            res.writeHead(200, {
+              'Content-Type': 'text/event-stream; charset=utf-8',
+              'Cache-Control': 'no-cache, no-transform',
+            });
+            res.flushHeaders();
+          }
+
+          const sendFinal = (payload: any) => {
+            if (res.destroyed) return;
+            res.write(`data: ${JSON.stringify({ type: 'final', payload })}\n\n`);
+            res.end();
+          };
+
           try {
+            const onToken = isStreaming
+              ? (chunk: string) => {
+                  if (res.destroyed) throw new Error('Client disconnected');
+                  res.write(`data: ${JSON.stringify({ type: 'token', chunk })}\n\n`);
+                }
+              : undefined;
+
             const response = await module.start(
               {
                 chain,
@@ -160,10 +182,11 @@ export default async function handler(
                 htmlToText,
               },
               sanitizedQuestion,
+              onToken,
             );
 
-            // Save Q&A only when there is an actual question and answer
-            if (sanitizedQuestion && response?.text) {
+            // Save Q&A only when there is an actual question and answer, and the
+            if (sanitizedQuestion && response?.text && !res.destroyed) {
                 await saveChatHistory(
                     session,
                     chatBotId,
@@ -175,17 +198,32 @@ export default async function handler(
                 );
             }
 
-            res.status(200).json(response);
+            if (isStreaming) {
+              sendFinal(response);
+            } else {
+              res.status(200).json(response);
+            }
             resolve(response);
           } catch (error: any) {
-            const upstream = error?.status ?? error?.response?.status;
-            const status =
-              Number.isInteger(upstream) && upstream >= 400 && upstream <= 599
-                ? upstream
-                : 500;
-            res
-              .status(status)
-              .json({ error: error?.message || 'Something went wrong' });
+            if (isStreaming) {
+              // Headers are already flushed with a 200 — the error has to travel
+              // in-band, same as the frontend already treats `data.error` today.
+              sendFinal({
+                text: '',
+                src: 'talkingDb',
+                error: true,
+                errorMessage: error?.message || 'Something went wrong',
+              });
+            } else {
+              const upstream = error?.status ?? error?.response?.status;
+              const status =
+                Number.isInteger(upstream) && upstream >= 400 && upstream <= 599
+                  ? upstream
+                  : 500;
+              res
+                .status(status)
+                .json({ error: error?.message || 'Something went wrong' });
+            }
             resolve(error);
           }
         })
